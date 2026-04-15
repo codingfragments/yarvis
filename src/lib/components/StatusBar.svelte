@@ -16,17 +16,15 @@
 	});
 </script>
 
-<footer class="fixed bottom-0 left-0 right-0 bg-base-300/80 backdrop-blur-sm border-t border-base-content/10 px-4 py-1.5 z-40">
-	<div class="flex items-center justify-between font-mono text-[11px] text-base-content/60">
-		<div class="flex items-center gap-3">
-			<span class="text-success">●</span>
-			<span class="font-pixel text-[8px]">YARVIS v{version}</span>
-			<span class="text-base-content/30">|</span>
-			<span class="font-pixel text-[8px]">{status}</span>
-			<span class="blink-cursor"></span>
+<footer class="fixed bottom-0 left-0 right-0 bg-base-200/60 backdrop-blur-sm border-t border-base-content/5 px-4 py-1 z-40">
+	<div class="flex items-center justify-between text-[11px] text-base-content/40">
+		<div class="flex items-center gap-2">
+			<span class="text-success text-[8px]">●</span>
+			<span class="font-mono">Yarvis v{version}</span>
+			<span class="text-base-content/20">·</span>
+			<span class="font-mono">{status}</span>
+			<span class="blink-cursor text-primary/40"></span>
 		</div>
-		<div class="font-pixel text-[8px]">
-			{time}
-		</div>
+		<span class="font-mono">{time}</span>
 	</div>
 </footer>

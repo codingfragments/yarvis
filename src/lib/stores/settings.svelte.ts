@@ -1,4 +1,5 @@
 import * as settingsService from '$lib/services/settings';
+import { isTauri } from '$lib/services/tauri';
 import type { Settings } from '$lib/types';
 
 const DEFAULT_SETTINGS: Settings = {
@@ -24,6 +25,11 @@ export function getSettingsStore() {
 		get error() { return error; },
 
 		async load() {
+			if (!isTauri()) {
+				settings = { ...DEFAULT_SETTINGS };
+				loaded = true;
+				return;
+			}
 			try {
 				settings = await settingsService.getSettings();
 				loaded = true;
@@ -36,6 +42,7 @@ export function getSettingsStore() {
 		},
 
 		async save() {
+			if (!isTauri()) return;
 			saving = true;
 			error = null;
 			try {
@@ -48,6 +55,10 @@ export function getSettingsStore() {
 		},
 
 		async reset() {
+			if (!isTauri()) {
+				settings = { ...DEFAULT_SETTINGS };
+				return;
+			}
 			try {
 				settings = await settingsService.getDefaultSettings();
 				await settingsService.saveSettings(settings);

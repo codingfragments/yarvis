@@ -6,11 +6,9 @@
 @plugin "./catppuccin.latte.ts";
 @plugin "./catppuccin.macchiato.ts";
 
-/* Custom utilities */
 @layer base {
 	body {
 		font-family: 'Inter', 'SF Pro', system-ui, sans-serif;
-		overflow: hidden;
 	}
 
 	.font-pixel {
@@ -19,47 +17,12 @@
 }
 
 @layer components {
-	/* 8-bit pixel border using box-shadow stepping */
-	.pixel-border {
-		--pb-color: oklch(var(--p));
-		box-shadow:
-			/* Top */
-			4px 0 0 0 var(--pb-color),
-			-4px 0 0 0 var(--pb-color),
-			/* Bottom */
-			0 4px 0 0 var(--pb-color),
-			0 -4px 0 0 var(--pb-color),
-			/* Corners - stepped */
-			2px 2px 0 0 var(--pb-color),
-			-2px 2px 0 0 var(--pb-color),
-			2px -2px 0 0 var(--pb-color),
-			-2px -2px 0 0 var(--pb-color);
-	}
-
-	/* Retro glow effect */
+	/* Subtle retro glow — barely visible, just a hint */
 	.retro-glow {
-		text-shadow:
-			0 0 4px currentColor,
-			0 0 8px currentColor;
+		text-shadow: 0 0 6px oklch(var(--p) / 0.25);
 	}
 
-	/* Scanline overlay */
-	.scanlines::after {
-		content: '';
-		position: absolute;
-		inset: 0;
-		background: repeating-linear-gradient(
-			0deg,
-			transparent,
-			transparent 2px,
-			rgba(0, 0, 0, 0.03) 2px,
-			rgba(0, 0, 0, 0.03) 4px
-		);
-		pointer-events: none;
-		z-index: 50;
-	}
-
-	/* Blinking cursor animation */
+	/* Blinking cursor — the one retro touch in the status bar */
 	.blink-cursor::after {
 		content: '_';
 		animation: blink 1s step-end infinite;
@@ -70,12 +33,12 @@
 		50% { opacity: 0; }
 	}
 
-	/* Tile hover glow */
+	/* Tile hover */
 	.tile-glow {
 		transition: all 0.2s ease;
 	}
 	.tile-glow:hover {
-		transform: scale(1.05);
-		box-shadow: 0 0 20px oklch(var(--p) / 0.4);
+		transform: translateY(-2px);
+		box-shadow: 0 8px 24px oklch(var(--p) / 0.15);
 	}
 }

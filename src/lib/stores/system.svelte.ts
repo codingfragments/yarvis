@@ -1,4 +1,5 @@
 import * as systemService from '$lib/services/system';
+import { isTauri } from '$lib/services/tauri';
 import type { SystemInfo } from '$lib/types';
 
 interface SystemStatus {
@@ -24,6 +25,17 @@ export function getSystemStore() {
 		get current() { return status; },
 
 		async load(pythonPath: string = 'python3') {
+			if (!isTauri()) {
+				status = {
+					info: { app_version: '0.1.0', os: 'browser', arch: 'n/a', rust_version: 'n/a' },
+					pythonVersion: 'n/a (browser mode)',
+					sqliteVersion: 'n/a (browser mode)',
+					dataDirSize: 'n/a',
+					loading: false,
+					error: 'Running in browser — use "bun run tauri:dev" for full system info'
+				};
+				return;
+			}
 			status.loading = true;
 			status.error = null;
 			try {

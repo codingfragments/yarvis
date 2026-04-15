@@ -4,10 +4,9 @@
 	interface Props {
 		value: ThemeMode;
 		onchange: (mode: ThemeMode) => void;
-		pixelFont?: boolean;
 	}
 
-	let { value, onchange, pixelFont = false }: Props = $props();
+	let { value, onchange }: Props = $props();
 
 	const modes: { mode: ThemeMode; icon: string; label: string }[] = [
 		{ mode: 'dark', icon: '🌙', label: 'Dark' },
@@ -26,9 +25,9 @@
 
 <button
 	onclick={cycle}
-	class="btn btn-ghost btn-sm gap-1 {pixelFont ? 'font-pixel text-[8px]' : 'text-xs'}"
+	class="btn btn-ghost btn-sm gap-1.5 text-xs"
 	title="Theme: {current.label}"
 >
-	<span class="text-lg">{current.icon}</span>
-	<span class="hidden sm:inline">{current.label}</span>
+	<span class="text-base">{current.icon}</span>
+	<span class="hidden sm:inline text-base-content/70">{current.label}</span>
 </button>

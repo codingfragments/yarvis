@@ -3,11 +3,6 @@
 	import AppTile from './AppTile.svelte';
 	import SearchBar from './SearchBar.svelte';
 
-	interface Props {
-		pixelFont?: boolean;
-	}
-
-	let { pixelFont = true }: Props = $props();
 	let search = $state('');
 
 	const tiles: AppTileConfig[] = [
@@ -16,7 +11,7 @@
 			label: 'Settings',
 			icon: '⚙️',
 			href: '/settings',
-			accent: '#c6a0f6', // mauve
+			accent: '#c6a0f6',
 			available: true,
 			description: 'Configure Yarvis'
 		},
@@ -25,7 +20,7 @@
 			label: 'Files',
 			icon: '📁',
 			href: '/files',
-			accent: '#8bd5ca', // teal
+			accent: '#8bd5ca',
 			available: false,
 			description: 'Browse & edit files'
 		},
@@ -34,7 +29,7 @@
 			label: 'Notes',
 			icon: '📝',
 			href: '/notes',
-			accent: '#f5a97f', // peach
+			accent: '#f5a97f',
 			available: false,
 			description: 'Markdown notes'
 		},
@@ -43,7 +38,7 @@
 			label: 'Database',
 			icon: '🗄️',
 			href: '/database',
-			accent: '#a6da95', // green
+			accent: '#a6da95',
 			available: false,
 			description: 'SQLite explorer'
 		},
@@ -52,7 +47,7 @@
 			label: 'Python',
 			icon: '🐍',
 			href: '/python',
-			accent: '#eed49f', // yellow
+			accent: '#eed49f',
 			available: false,
 			description: 'Run Python code'
 		},
@@ -61,7 +56,7 @@
 			label: 'Terminal',
 			icon: '💻',
 			href: '/terminal',
-			accent: '#b7bdf8', // lavender
+			accent: '#b7bdf8',
 			available: false,
 			description: 'System terminal'
 		}
@@ -79,15 +74,15 @@
 </script>
 
 <div class="flex flex-col items-center gap-8 w-full">
-	<SearchBar value={search} oninput={(v) => (search = v)} {pixelFont} />
+	<SearchBar value={search} oninput={(v) => (search = v)} />
 
-	<div class="grid grid-cols-2 sm:grid-cols-3 gap-6 w-full max-w-2xl px-4">
+	<div class="grid grid-cols-2 sm:grid-cols-3 gap-4 w-full max-w-2xl px-4">
 		{#each filtered as tile (tile.id)}
-			<AppTile {tile} {pixelFont} />
+			<AppTile {tile} />
 		{/each}
 	</div>
 
 	{#if filtered.length === 0}
-		<p class="font-pixel text-[10px] text-base-content/40 mt-8">No tools found</p>
+		<p class="text-sm text-base-content/40 mt-8">No tools found</p>
 	{/if}
 </div>

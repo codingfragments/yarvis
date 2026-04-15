@@ -25,16 +25,16 @@ Built as a learning experiment and reusable tool, Yarvis combines modern web tec
 
 ```
 ┌─────────────────────────────────────────────────┐
-│                Tauri Window (WebView)            │
-│                                                  │
-│   SvelteKit SPA ──► Service Layer ──► invoke()   │
-│   (Routes, Components,    (TypeScript)    │      │
-│    Svelte 5 Runes)                        │      │
-│                                           │      │
-│                                    Tauri IPC      │
-│                                           │      │
-│   Rust Backend ◄──────────────────────────┘      │
-│   (Settings, System Info, SQLite, Python Exec)   │
+│                Tauri Window (WebView)           │
+│                                                 │
+│   SvelteKit SPA ──► Service Layer ──► invoke()  │
+│   (Routes, Components,    (TypeScript)    │     │
+│    Svelte 5 Runes)                        │     │
+│                                           │     │
+│                                    Tauri IPC    │
+│                                           │     │
+│   Rust Backend ◄──────────────────────────┘     │
+│   (Settings, System Info, SQLite, Python Exec)  │
 └─────────────────────────────────────────────────┘
 ```
 
@@ -48,6 +48,7 @@ Yarvis uses a **layered API pattern** that keeps SvelteKit conventions intact wh
 4. **Tauri Commands** (`src-tauri/src/commands/`) — Rust functions decorated with `#[tauri::command]` that handle all backend logic
 
 **Example flow — Loading settings:**
+
 ```
 /settings +page.svelte
     → getSettingsStore().load()
@@ -57,6 +58,7 @@ Yarvis uses a **layered API pattern** that keeps SvelteKit conventions intact wh
 ```
 
 This pattern means:
+
 - **Frontend** knows nothing about file paths, SQLite, or system commands
 - **Service layer** is the single point of abstraction — swap Tauri for REST/WebSocket later
 - **Rust backend** handles all I/O with full system access
@@ -139,6 +141,7 @@ bun run tauri:dev
 ```
 
 This will:
+
 1. Start the SvelteKit dev server on `http://localhost:1420`
 2. Compile the Rust backend
 3. Open the Tauri native window pointing at the dev server
@@ -166,12 +169,14 @@ bun run tauri:build
 ```
 
 Output is in `src-tauri/target/release/bundle/`:
+
 - `macos/Yarvis.app` — The application bundle
 - `dmg/Yarvis_0.1.0_aarch64.dmg` — Distributable disk image
 
 ### Bundle Configuration
 
 Tauri bundle settings are in `src-tauri/tauri.conf.json` under `bundle`:
+
 - `targets: "all"` — Builds all available formats for the platform
 - `macOS.minimumSystemVersion: "10.15"` — Minimum macOS Catalina
 
@@ -197,6 +202,7 @@ On first launch, the directory and default `settings.json` are created automatic
 To add a new backend-connected feature (e.g., a Notes page):
 
 ### 1. Rust Command (`src-tauri/src/commands/notes.rs`)
+
 ```rust
 #[tauri::command]
 pub fn get_notes() -> Result<Vec<Note>, String> {
@@ -205,6 +211,7 @@ pub fn get_notes() -> Result<Vec<Note>, String> {
 ```
 
 ### 2. Register in `lib.rs`
+
 ```rust
 .invoke_handler(tauri::generate_handler![
     // ...existing commands
@@ -213,6 +220,7 @@ pub fn get_notes() -> Result<Vec<Note>, String> {
 ```
 
 ### 3. Service Layer (`src/lib/services/notes.ts`)
+
 ```typescript
 import { invoke } from './tauri';
 import type { Note } from '$lib/types';
@@ -223,6 +231,7 @@ export async function getNotes(): Promise<Note[]> {
 ```
 
 ### 4. Store (`src/lib/stores/notes.svelte.ts`)
+
 ```typescript
 let notes = $state<Note[]>([]);
 
@@ -235,6 +244,7 @@ export function getNotesStore() {
 ```
 
 ### 5. Route (`src/routes/notes/+page.svelte`)
+
 ```svelte
 <script lang="ts">
     import { getNotesStore } from '$lib/stores/notes.svelte';

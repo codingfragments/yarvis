@@ -11,11 +11,11 @@
 	const resolvedTheme = $derived(
 		settingsStore.current.theme === 'auto'
 			? (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches
-				? 'catppuccin-macchiato'
-				: 'catppuccin-latte')
+				? 'macchiato'
+				: 'latte')
 			: settingsStore.current.theme === 'dark'
-				? 'catppuccin-macchiato'
-				: 'catppuccin-latte'
+				? 'macchiato'
+				: 'latte'
 	);
 
 	onMount(() => {
@@ -25,13 +25,12 @@
 
 <div
 	data-theme={resolvedTheme}
-	class="min-h-screen bg-base-100 text-base-content relative scanlines"
-	class:font-pixel={settingsStore.current.pixel_font_headings}
+	class="min-h-screen bg-base-100 text-base-content"
 >
 	<!-- Header bar -->
-	<header class="fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 py-2 bg-base-100/80 backdrop-blur-sm border-b border-base-content/5">
+	<header class="fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 py-2.5 bg-base-100/80 backdrop-blur-sm border-b border-base-content/5">
 		<a href="/" class="flex items-center gap-2 no-underline">
-			<span class="font-pixel text-[12px] retro-glow text-primary">YARVIS</span>
+			<span class="font-pixel text-[9px] tracking-wider text-primary retro-glow">YARVIS</span>
 		</a>
 		<ThemeToggle
 			value={settingsStore.current.theme}
@@ -39,7 +38,6 @@
 				settingsStore.update({ theme: mode });
 				settingsStore.save();
 			}}
-			pixelFont={settingsStore.current.pixel_font_headings}
 		/>
 	</header>
 
