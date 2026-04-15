@@ -1,0 +1,81 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+@import "tailwindcss";
+@plugin "daisyui" {
+	themes: false;
+}
+@plugin "./catppuccin.latte.ts";
+@plugin "./catppuccin.macchiato.ts";
+
+/* Custom utilities */
+@layer base {
+	body {
+		font-family: 'Inter', 'SF Pro', system-ui, sans-serif;
+		overflow: hidden;
+	}
+
+	.font-pixel {
+		font-family: 'Press Start 2P', monospace;
+	}
+}
+
+@layer components {
+	/* 8-bit pixel border using box-shadow stepping */
+	.pixel-border {
+		--pb-color: oklch(var(--p));
+		box-shadow:
+			/* Top */
+			4px 0 0 0 var(--pb-color),
+			-4px 0 0 0 var(--pb-color),
+			/* Bottom */
+			0 4px 0 0 var(--pb-color),
+			0 -4px 0 0 var(--pb-color),
+			/* Corners - stepped */
+			2px 2px 0 0 var(--pb-color),
+			-2px 2px 0 0 var(--pb-color),
+			2px -2px 0 0 var(--pb-color),
+			-2px -2px 0 0 var(--pb-color);
+	}
+
+	/* Retro glow effect */
+	.retro-glow {
+		text-shadow:
+			0 0 4px currentColor,
+			0 0 8px currentColor;
+	}
+
+	/* Scanline overlay */
+	.scanlines::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		background: repeating-linear-gradient(
+			0deg,
+			transparent,
+			transparent 2px,
+			rgba(0, 0, 0, 0.03) 2px,
+			rgba(0, 0, 0, 0.03) 4px
+		);
+		pointer-events: none;
+		z-index: 50;
+	}
+
+	/* Blinking cursor animation */
+	.blink-cursor::after {
+		content: '_';
+		animation: blink 1s step-end infinite;
+	}
+
+	@keyframes blink {
+		0%, 100% { opacity: 1; }
+		50% { opacity: 0; }
+	}
+
+	/* Tile hover glow */
+	.tile-glow {
+		transition: all 0.2s ease;
+	}
+	.tile-glow:hover {
+		transform: scale(1.05);
+		box-shadow: 0 0 20px oklch(var(--p) / 0.4);
+	}
+}
