@@ -168,7 +168,7 @@
 			{/if}
 
 			<!-- Rendered content -->
-			<div class="max-w-[860px] mx-auto px-8 py-6">
+			<div class="max-w-[860px] mx-auto px-8 pt-8 pb-6">
 				<MarkdownRenderer
 					markdown={store.rawMarkdown}
 					onCheckboxToggle={handleCheckboxToggle}

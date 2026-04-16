@@ -41,7 +41,7 @@
 <aside class="w-64 flex-shrink-0 bg-base-200/30 border-r border-base-content/5 flex flex-col h-full overflow-hidden">
 	<!-- Header with date selector -->
 	<div class="p-3 border-b border-base-content/5 flex-shrink-0">
-		<div class="text-[9px] font-semibold uppercase tracking-widest text-base-content/30 mb-2 flex items-center gap-1.5">
+		<div class="text-[10px] font-semibold uppercase tracking-widest text-base-content/30 mb-2 flex items-center gap-1.5">
 			📋 Briefings
 		</div>
 		{#if dates.length > 0}
@@ -64,7 +64,7 @@
 		<input
 			type="text"
 			placeholder="Filter files..."
-			class="input input-bordered input-xs w-full text-xs"
+			class="input input-bordered input-sm w-full text-sm"
 			value={searchQuery}
 			oninput={(e) => onSearchChange(e.currentTarget.value)}
 		/>
@@ -72,14 +72,14 @@
 
 	<!-- File list -->
 	<div class="flex-1 overflow-y-auto px-2 py-2">
-		<div class="text-[9px] font-semibold uppercase tracking-wider text-base-content/30 px-2 py-1.5 flex items-center gap-2">
+		<div class="text-[10px] font-semibold uppercase tracking-wider text-base-content/30 px-2 py-1.5 flex items-center gap-2">
 			Files
 			<span class="flex-1 h-px bg-base-content/5"></span>
 		</div>
 
 		{#each filteredFiles as file}
 			<button
-				class="flex items-center gap-2 w-full px-2.5 py-1.5 rounded-md text-left text-xs transition-all mb-0.5
+				class="flex items-center gap-2 w-full px-2.5 py-2 rounded-md text-left text-sm transition-all mb-0.5
 					{currentFile === file.filename
 						? 'bg-primary/10 text-primary font-semibold shadow-[inset_3px_0_0] shadow-primary'
 						: sidePanelFile === file.filename
@@ -96,7 +96,7 @@
 					</span>
 				{/if}
 				{#if file.unchecked_count > 0}
-					<span class="flex-shrink-0 bg-warning/15 text-warning text-[9px] font-bold px-1.5 py-0.5 rounded-full">
+					<span class="flex-shrink-0 bg-warning/15 text-warning text-[10px] font-bold px-1.5 py-0.5 rounded-full">
 						{file.unchecked_count}
 					</span>
 				{/if}
@@ -111,16 +111,16 @@
 		{#if headings.length > 1}
 			<div class="mt-3">
 				<div class="h-px bg-base-content/5 mx-1 mb-2"></div>
-				<div class="text-[9px] font-semibold uppercase tracking-wider text-base-content/30 px-2 py-1.5 flex items-center gap-2">
+				<div class="text-[10px] font-semibold uppercase tracking-wider text-base-content/30 px-2 py-1.5 flex items-center gap-2">
 					On this page
 					<span class="flex-1 h-px bg-base-content/5"></span>
 				</div>
 				<div class="ml-3 border-l border-base-content/5 pl-2">
 					{#each headings as heading}
 						<button
-							class="block w-full text-left text-[11px] py-0.5 px-1.5 rounded text-base-content/40
+							class="block w-full text-left text-xs py-0.5 px-1.5 rounded text-base-content/40
 								hover:text-base-content/70 hover:bg-base-content/5 truncate transition-colors
-								{heading.level >= 3 ? 'pl-4 text-[10px]' : ''}"
+								{heading.level >= 3 ? 'pl-4 text-[11px]' : ''}"
 							title={heading.text}
 							onclick={() => {
 								const el = document.getElementById(heading.id);

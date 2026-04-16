@@ -39,7 +39,7 @@
 					.replace(/\s+/g, '-') || 'section';
 			seen[base] = (seen[base] || 0) + 1;
 			el.id = seen[base] > 1 ? `${base}-${seen[base]}` : base;
-			el.style.scrollMarginTop = '20px';
+			el.style.scrollMarginTop = '48px';
 		});
 
 		// Checkboxes
