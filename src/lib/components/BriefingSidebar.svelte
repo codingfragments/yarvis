@@ -118,9 +118,9 @@
 				<div class="ml-3 border-l border-base-content/5 pl-2">
 					{#each headings as heading}
 						<button
-							class="block w-full text-left text-xs py-0.5 px-1.5 rounded text-base-content/40
+							class="block w-full text-left text-sm py-0.5 px-1.5 rounded text-base-content/40
 								hover:text-base-content/70 hover:bg-base-content/5 truncate transition-colors
-								{heading.level >= 3 ? 'pl-4 text-[11px]' : ''}"
+								{heading.level >= 3 ? 'pl-4 text-xs' : ''}"
 							title={heading.text}
 							onclick={() => {
 								const el = document.getElementById(heading.id);
