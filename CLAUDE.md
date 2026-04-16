@@ -53,6 +53,7 @@ Component/Page → $lib/services/*.ts → invoke<T>() → Rust #[tauri::command]
 - **main** — stable, working state only
 - **feature/*** — all new features and bugfixes
 - Never commit feature work or fixes directly to main
+- Never merge locally — always push the branch and create a GitHub PR via `gh pr create`
 - Conventional commit messages
 
 ## Key Config
