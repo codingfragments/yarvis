@@ -6,6 +6,7 @@
 		files: FileEntry[];
 		currentDate: string | null;
 		currentFile: string | null;
+		sidePanelFile?: string | null;
 		headings: Heading[];
 		searchQuery: string;
 		onDateChange: (key: string) => void;
@@ -18,6 +19,7 @@
 		files,
 		currentDate,
 		currentFile,
+		sidePanelFile = null,
 		headings,
 		searchQuery,
 		onDateChange,
@@ -80,14 +82,16 @@
 				class="flex items-center gap-2 w-full px-2.5 py-1.5 rounded-md text-left text-xs transition-all mb-0.5
 					{currentFile === file.filename
 						? 'bg-primary/10 text-primary font-semibold shadow-[inset_3px_0_0] shadow-primary'
-						: 'text-base-content/60 hover:bg-base-content/5 hover:text-base-content'}"
+						: sidePanelFile === file.filename
+							? 'bg-secondary/10 text-secondary font-medium shadow-[inset_3px_0_0] shadow-secondary'
+							: 'text-base-content/60 hover:bg-base-content/5 hover:text-base-content'}"
 				onclick={() => onFileSelect(file.filename)}
 			>
 				<span class="flex-shrink-0 text-sm">{file.icon}</span>
 				<span class="flex-1 truncate">{file.label}</span>
 				{#if file.time}
 					<span class="flex-shrink-0 bg-base-content/5 text-base-content/40 text-[10px] font-mono px-1.5 py-0.5 rounded
-						{currentFile === file.filename ? 'bg-primary/15 text-primary' : ''}">
+						{currentFile === file.filename ? 'bg-primary/15 text-primary' : sidePanelFile === file.filename ? 'bg-secondary/15 text-secondary' : ''}">
 						{file.time}
 					</span>
 				{/if}

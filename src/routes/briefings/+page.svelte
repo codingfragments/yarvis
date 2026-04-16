@@ -42,6 +42,18 @@
 		}
 	});
 
+	function handleFileSelect(filename: string) {
+		const dir = settings.current.briefings_dir;
+		const file = store.files.find((f) => f.filename === filename);
+		// On wide screens, non-morning files open in the side panel
+		if (isWideScreen && file && !file.is_morning) {
+			store.openInSidePanel(filename, dir);
+		} else {
+			store.closeSidePanel();
+			store.selectFile(filename, dir);
+		}
+	}
+
 	function handleLocalLink(filename: string) {
 		const dir = settings.current.briefings_dir;
 		if (isWideScreen) {
@@ -64,10 +76,10 @@
 
 		if (e.key === 'ArrowDown' && fileIdx < store.files.length - 1) {
 			e.preventDefault();
-			store.selectFile(store.files[fileIdx + 1].filename, dir);
+			handleFileSelect(store.files[fileIdx + 1].filename);
 		} else if (e.key === 'ArrowUp' && fileIdx > 0) {
 			e.preventDefault();
-			store.selectFile(store.files[fileIdx - 1].filename, dir);
+			handleFileSelect(store.files[fileIdx - 1].filename);
 		} else if (e.key === 'ArrowLeft') {
 			e.preventDefault();
 			const dateIdx = store.dates.findIndex((d) => d.key === store.currentDate);
@@ -119,7 +131,8 @@
 		{headings}
 		{searchQuery}
 		onDateChange={(key) => store.selectDate(key, settings.current.briefings_dir)}
-		onFileSelect={(filename) => store.selectFile(filename, settings.current.briefings_dir)}
+		sidePanelFile={store.sidePanelFile}
+		onFileSelect={(filename) => handleFileSelect(filename)}
 		onSearchChange={(q) => (searchQuery = q)}
 	/>
 
