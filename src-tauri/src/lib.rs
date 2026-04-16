@@ -11,6 +11,10 @@ pub fn run() {
             commands::system::get_python_version,
             commands::system::get_sqlite_version,
             commands::system::get_data_dir_size,
+            commands::briefings::scan_briefings,
+            commands::briefings::list_date_files,
+            commands::briefings::read_briefing,
+            commands::briefings::toggle_checkbox,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Yarvis");

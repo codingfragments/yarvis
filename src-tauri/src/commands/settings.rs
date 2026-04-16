@@ -28,6 +28,8 @@ pub struct Settings {
     pub window_opacity: f64,
     pub launch_at_startup: bool,
     pub python_path: String,
+    pub briefings_dir: String,
+    pub briefings_max_days: u32,
 }
 
 impl Default for Settings {
@@ -41,6 +43,10 @@ impl Default for Settings {
             window_opacity: 0.95,
             launch_at_startup: false,
             python_path,
+            briefings_dir: dirs::home_dir()
+                .map(|h| h.join("claude-chats/briefings").to_string_lossy().to_string())
+                .unwrap_or_default(),
+            briefings_max_days: 5,
         }
     }
 }

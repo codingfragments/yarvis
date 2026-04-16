@@ -9,7 +9,9 @@ const DEFAULT_SETTINGS: Settings = {
 	pixel_font_headings: true,
 	window_opacity: 0.95,
 	launch_at_startup: false,
-	python_path: 'python3'
+	python_path: 'python3',
+	briefings_dir: '~/claude-chats/briefings',
+	briefings_max_days: 5
 };
 
 let settings = $state<Settings>({ ...DEFAULT_SETTINGS });

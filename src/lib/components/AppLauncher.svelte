@@ -7,6 +7,15 @@
 
 	const tiles: AppTileConfig[] = [
 		{
+			id: 'briefings',
+			label: 'Briefings',
+			icon: '📋',
+			href: '/briefings',
+			accent: '#8aadf4',
+			available: true,
+			description: 'Daily briefings viewer'
+		},
+		{
 			id: 'settings',
 			label: 'Settings',
 			icon: '⚙️',
