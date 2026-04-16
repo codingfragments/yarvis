@@ -30,11 +30,6 @@
 		});
 	}
 
-	// Extract H2 headings for quick-jump bar
-	const quickJumpSections = $derived(
-		headings.filter((h) => h.level === 2).slice(0, 8)
-	);
-
 	$effect(() => {
 		// Re-extract headings when markdown changes
 		if (store.rawMarkdown) {
@@ -149,24 +144,6 @@
 				<a href="/settings" class="btn btn-ghost btn-sm text-xs">Configure in Settings</a>
 			</div>
 		{:else if store.rawMarkdown}
-			<!-- Quick-jump bar -->
-			{#if quickJumpSections.length > 1}
-				<div class="sticky top-0 z-10 bg-base-100/90 backdrop-blur-sm border-b border-base-content/5 px-6 py-1.5 flex items-center gap-1.5 overflow-x-auto">
-					{#each quickJumpSections as section}
-						<button
-							class="flex-shrink-0 px-2.5 py-1 rounded-full text-[10px] font-medium
-								bg-base-content/5 text-base-content/50 hover:bg-primary/10 hover:text-primary transition-colors"
-							onclick={() => {
-								const el = document.getElementById(section.id);
-								if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-							}}
-						>
-							{section.text.replace(/^[^\w]*/, '').slice(0, 25)}
-						</button>
-					{/each}
-				</div>
-			{/if}
-
 			<!-- Rendered content -->
 			<div class="max-w-[860px] mx-auto px-8 pt-8 pb-6">
 				<MarkdownRenderer
