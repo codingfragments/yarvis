@@ -25,6 +25,15 @@
 			description: 'Configure Yarvis'
 		},
 		{
+			id: 'about',
+			label: 'About',
+			icon: 'ℹ️',
+			href: '/about',
+			accent: '#91d7e3',
+			available: true,
+			description: 'About Yarvis'
+		},
+		{
 			id: 'files',
 			label: 'Files',
 			icon: '📁',
