@@ -40,7 +40,7 @@
 				{label}
 			</span>
 			<button
-				class="btn btn-ghost btn-xs text-base-content/40 hover:text-base-content"
+				class="btn btn-ghost btn-sm text-base-content/40 hover:text-base-content text-lg"
 				onclick={onClose}
 				title="Close (Esc)"
 			>
