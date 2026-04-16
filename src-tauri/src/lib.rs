@@ -15,6 +15,7 @@ pub fn run() {
             commands::briefings::list_date_files,
             commands::briefings::read_briefing,
             commands::briefings::toggle_checkbox,
+            commands::briefings::get_today_widgets,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Yarvis");
