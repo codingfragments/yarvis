@@ -1,4 +1,6 @@
 <script lang="ts">
+	import PomodoroTimer from './PomodoroTimer.svelte';
+
 	interface Props {
 		version?: string;
 		status?: string;
@@ -25,6 +27,9 @@
 			<span class="font-mono">{status}</span>
 			<span class="blink-cursor text-primary/40"></span>
 		</div>
-		<span class="font-mono">{time}</span>
+		<div class="flex items-center gap-2">
+			<PomodoroTimer />
+			<span class="font-mono">{time}</span>
+		</div>
 	</div>
 </footer>

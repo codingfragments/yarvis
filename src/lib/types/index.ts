@@ -45,6 +45,17 @@ export interface SystemInfo {
 	rust_version: string;
 }
 
+export type PomodoroPhase = 'idle' | 'focus' | 'shortBreak' | 'longBreak';
+
+export interface PomodoroSettings {
+	focusMinutes: number;
+	shortBreakMinutes: number;
+	longBreakMinutes: number;
+	sessionsBeforeLongBreak: number;
+	autoStartBreaks: boolean;
+	autoStartFocus: boolean;
+}
+
 export interface AppTileConfig {
 	id: string;
 	label: string;
