@@ -53,7 +53,10 @@ Component/Page → $lib/services/*.ts → invoke<T>() → Rust #[tauri::command]
 - **main** — stable, working state only
 - **feature/*** — all new features and bugfixes
 - Never commit feature work or fixes directly to main
+- Never merge locally — always push the branch and create a GitHub PR via `gh pr create`
 - Conventional commit messages
+- During development, save the active plan to `specs/plan.md` (gitignored)
+- Before creating the PR, rename to `specs/YYYY-MM-DD_feature_plan.md` and commit (archived intent)
 
 ## Key Config
 

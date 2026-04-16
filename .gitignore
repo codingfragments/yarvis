@@ -30,5 +30,8 @@ Thumbs.db
 # Build output
 dist/
 
+# Active plan (temporary during development)
+specs/plan.md
+
 # Yarvis data (local dev)
 .yarvis-dev/
