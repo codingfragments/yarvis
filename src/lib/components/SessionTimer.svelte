@@ -85,12 +85,14 @@
 			</div>
 		{:else}
 			<button
-				class="flex items-center gap-1 text-xs text-base-content/40 hover:text-base-content/60 transition-colors"
+				class="flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full
+					bg-primary/10 text-primary border border-primary/20
+					hover:bg-primary/20 hover:border-primary/30 transition-all"
 				onclick={start}
 				title="Start session timer ({totalMinutes} min)"
 			>
 				<span>⏱</span>
-				<span>{totalMinutes} min</span>
+				<span>{totalMinutes} min — Start Timer</span>
 			</button>
 		{/if}
 	</div>
