@@ -1,8 +1,37 @@
 # Yarvis
 
-**Personal Knowledge Assistant** — A local-first desktop app for managing files, notes, databases, and running Python code, all from a single retro-styled launcher.
+**Personal Knowledge Assistant** — A local-first desktop app for briefings, structured learning courses with XP tracking, and more — all from a single launcher.
 
 Built as a learning experiment and reusable tool, Yarvis combines modern web technologies with native desktop performance through Tauri.
+
+---
+
+## Install
+
+### Homebrew (macOS Apple Silicon)
+
+```bash
+brew tap codingfragments/tap
+brew install --cask yarvis
+```
+
+### Manual Download
+
+Grab the `.dmg` from the [latest release](https://github.com/codingfragments/yarvis/releases/latest).
+
+> **Note:** The app is unsigned. On first launch: right-click the app → **Open**, or allow it in **System Settings → Privacy & Security**.
+
+### Build from Source
+
+```bash
+git clone https://github.com/codingfragments/yarvis.git
+cd yarvis
+bun install
+bun run tauri:build
+# .dmg output: src-tauri/target/release/bundle/dmg/
+```
+
+Requires Bun, Rust, and Xcode Command Line Tools (see [Prerequisites](#prerequisites)).
 
 ---
 
@@ -171,7 +200,7 @@ bun run tauri:build
 Output is in `src-tauri/target/release/bundle/`:
 
 - `macos/Yarvis.app` — The application bundle
-- `dmg/Yarvis_0.1.0_aarch64.dmg` — Distributable disk image
+- `dmg/Yarvis_0.2.0_aarch64.dmg` — Distributable disk image
 
 ### Bundle Configuration
 
