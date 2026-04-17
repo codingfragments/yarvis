@@ -139,18 +139,16 @@
 	{/if}
 
 	<!-- Boss Challenge -->
-	<section>
-		<div class="section-header">
-			<span>🏆 Boss Challenge</span>
-			<span class="flex-1 h-px bg-base-content/5"></span>
-			{#if session.boss_challenge}
+	{#if session.boss_challenge}
+		{@const boss = session.boss_challenge}
+		<section>
+			<div class="section-header">
+				<span>🏆 Boss Challenge</span>
+				<span class="flex-1 h-px bg-base-content/5"></span>
 				<span class="bg-warning/15 text-warning text-[9px] font-bold px-1.5 py-0.5 rounded-full">
-					{session.boss_challenge.xp} XP
+					{boss.xp} XP
 				</span>
-			{/if}
-		</div>
-		{#if session.boss_challenge}
-			{@const boss = session.boss_challenge}
+			</div>
 			<div class="mt-3 rounded-lg border-2 border-warning/20 bg-warning/5 p-4 relative">
 				<div class="flex items-start gap-3">
 					<div class="relative">
@@ -169,12 +167,8 @@
 					</div>
 				</div>
 			</div>
-		{:else}
-			<div class="mt-3 rounded-lg bg-base-200/20 border border-base-content/5 p-4 text-sm text-base-content/40 text-center">
-				No boss challenge for this session.
-			</div>
-		{/if}
-	</section>
+		</section>
+	{/if}
 
 	<!-- Summary -->
 	{#if session.summary_points.length > 0}
