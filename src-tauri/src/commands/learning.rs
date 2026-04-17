@@ -575,6 +575,8 @@ fn parse_session(lines: &[&str], number: usize, title: &str) -> LearningSession 
     let mut summary_points: Vec<String> = Vec::new();
     let mut resources_markdown = String::new();
 
+    let mut boss_header = String::new();
+
     for (header, section_lines) in &sections {
         let header_lower = header.to_lowercase();
         let content = trim_section(section_lines);
@@ -586,6 +588,7 @@ fn parse_session(lines: &[&str], number: usize, title: &str) -> LearningSession 
         } else if header_lower.contains("exercise") {
             exercises_markdown = content;
         } else if header_lower.contains("boss") {
+            boss_header = header.clone();
             boss_markdown = content;
         } else if header_lower.contains("summary") || header_lower.contains("remember") {
             summary_points = extract_summary_points(&content);
@@ -597,8 +600,8 @@ fn parse_session(lines: &[&str], number: usize, title: &str) -> LearningSession 
     // Parse individual exercises
     let exercises = parse_exercises(&exercises_markdown);
 
-    // Parse boss challenge
-    let boss_challenge = parse_boss_challenge(&boss_markdown);
+    // Parse boss challenge — XP comes from the H4 header, body is the full description
+    let boss_challenge = parse_boss_challenge(&boss_header, &boss_markdown);
 
     LearningSession {
         number,
@@ -674,40 +677,25 @@ fn parse_exercises(markdown: &str) -> Vec<LearningExercise> {
     exercises
 }
 
-fn parse_boss_challenge(markdown: &str) -> Option<BossChallenge> {
-    if markdown.is_empty() {
+fn parse_boss_challenge(header: &str, markdown: &str) -> Option<BossChallenge> {
+    if markdown.is_empty() && header.is_empty() {
         return None;
     }
 
     let re_xp = Regex::new(r"\((\d+)\s*XP\)").unwrap();
+
+    // XP comes from the H4 header (e.g. "🏆 Boss Challenge (40 XP)")
+    // Fall back to searching the body if not found in header
     let xp = re_xp
-        .captures(markdown)
+        .captures(header)
+        .or_else(|| re_xp.captures(markdown))
         .and_then(|c| c[1].parse::<u32>().ok())
         .unwrap_or(0);
 
-    // Title is usually in the H4 header or first bold line
-    let first_line = markdown.lines().next().unwrap_or("");
-    let title = re_xp
-        .replace(first_line, "")
-        .trim()
-        .trim_start_matches('*')
-        .trim_end_matches('*')
-        .trim()
-        .to_string();
-
-    let description = markdown
-        .lines()
-        .skip(if title.is_empty() { 0 } else { 1 })
-        .collect::<Vec<_>>()
-        .join("\n");
-
+    // The entire body content is the description
     Some(BossChallenge {
-        title: if title.is_empty() {
-            "Boss Challenge".to_string()
-        } else {
-            title
-        },
-        description_markdown: description.trim().to_string(),
+        title: "Boss Challenge".to_string(),
+        description_markdown: markdown.trim().to_string(),
         xp,
     })
 }
