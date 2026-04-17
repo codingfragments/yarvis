@@ -30,6 +30,7 @@ pub struct Settings {
     pub python_path: String,
     pub briefings_dir: String,
     pub briefings_max_days: u32,
+    pub learning_dir: String,
 }
 
 impl Default for Settings {
@@ -47,6 +48,9 @@ impl Default for Settings {
                 .map(|h| h.join("claude-chats/briefings").to_string_lossy().to_string())
                 .unwrap_or_default(),
             briefings_max_days: 5,
+            learning_dir: dirs::home_dir()
+                .map(|h| h.join("claude-chats/learning").to_string_lossy().to_string())
+                .unwrap_or_default(),
         }
     }
 }

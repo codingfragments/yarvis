@@ -5,7 +5,7 @@
 
 	let search = $state('');
 
-	const tiles: AppTileConfig[] = [
+	const appTiles: AppTileConfig[] = [
 		{
 			id: 'briefings',
 			label: 'Briefings',
@@ -16,13 +16,13 @@
 			description: 'Daily briefings viewer'
 		},
 		{
-			id: 'settings',
-			label: 'Settings',
-			icon: '⚙️',
-			href: '/settings',
-			accent: '#c6a0f6',
+			id: 'learning',
+			label: 'Learning',
+			icon: '📚',
+			href: '/learning',
+			accent: '#f5a97f',
 			available: true,
-			description: 'Configure Yarvis'
+			description: 'Self-paced courses'
 		},
 		{
 			id: 'about',
@@ -32,53 +32,21 @@
 			accent: '#91d7e3',
 			available: true,
 			description: 'About Yarvis'
-		},
-		{
-			id: 'files',
-			label: 'Files',
-			icon: '📁',
-			href: '/files',
-			accent: '#8bd5ca',
-			available: false,
-			description: 'Browse & edit files'
-		},
-		{
-			id: 'notes',
-			label: 'Notes',
-			icon: '📝',
-			href: '/notes',
-			accent: '#f5a97f',
-			available: false,
-			description: 'Markdown notes'
-		},
-		{
-			id: 'database',
-			label: 'Database',
-			icon: '🗄️',
-			href: '/database',
-			accent: '#a6da95',
-			available: false,
-			description: 'SQLite explorer'
-		},
-		{
-			id: 'python',
-			label: 'Python',
-			icon: '🐍',
-			href: '/python',
-			accent: '#eed49f',
-			available: false,
-			description: 'Run Python code'
-		},
-		{
-			id: 'terminal',
-			label: 'Terminal',
-			icon: '💻',
-			href: '/terminal',
-			accent: '#b7bdf8',
-			available: false,
-			description: 'System terminal'
 		}
 	];
+
+	// Settings always appears last (rightmost column)
+	const settingsTile: AppTileConfig = {
+		id: 'settings',
+		label: 'Settings',
+		icon: '⚙️',
+		href: '/settings',
+		accent: '#c6a0f6',
+		available: true,
+		description: 'Configure Yarvis'
+	};
+
+	const tiles = $derived([...appTiles, settingsTile]);
 
 	const filtered = $derived(
 		search
