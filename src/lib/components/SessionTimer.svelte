@@ -16,16 +16,33 @@
 	let isRunning = $state(false);
 	let intervalId: ReturnType<typeof setInterval> | null = null;
 
+	function requestNotificationPermission() {
+		if ('Notification' in window && Notification.permission === 'default') {
+			Notification.requestPermission();
+		}
+	}
+
 	function start() {
 		if (totalMinutes <= 0) return;
+		requestNotificationPermission();
 		secondsRemaining = totalMinutes * 60;
 		isRunning = true;
 		intervalId = setInterval(() => {
 			secondsRemaining--;
 			if (secondsRemaining <= 0) {
-				stop();
+				finish();
 			}
 		}, 1000);
+	}
+
+	function finish() {
+		stop();
+		if ('Notification' in window && Notification.permission === 'granted') {
+			new Notification('Session Timer Complete', {
+				body: `Your ${totalMinutes}-minute study session is done!`,
+				icon: '⏱'
+			});
+		}
 	}
 
 	function stop() {
