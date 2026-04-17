@@ -41,7 +41,7 @@
 		secondsRemaining = 0;
 	}
 
-	const display = $derived(() => {
+	const display = $derived.by(() => {
 		const m = Math.floor(secondsRemaining / 60);
 		const s = secondsRemaining % 60;
 		return `${m}:${s.toString().padStart(2, '0')}`;
@@ -59,7 +59,7 @@
 		{#if isRunning}
 			<div class="flex items-center gap-1.5 bg-base-200/60 rounded-full px-2.5 py-1 border border-base-content/5">
 				<div class="radial-progress text-primary" style="--value:{progress}; --size:1rem; --thickness:2px;" role="progressbar"></div>
-				<span class="text-xs font-mono text-base-content/70">{display()}</span>
+				<span class="text-xs font-mono text-base-content/70">{display}</span>
 				<button
 					class="text-[10px] text-base-content/40 hover:text-base-content/70 transition-colors"
 					onclick={reset}
