@@ -627,10 +627,11 @@ fn parse_exercises(markdown: &str) -> Vec<LearningExercise> {
         return Vec::new();
     }
 
-    // Match: **Exercise 1: Title** (30 XP)  or  **Title** (30 XP)
-    // XP can be inside or outside the bold markers
+    // Match: **Exercise 1: Title** (30 XP) optional trailing text
+    // Also matches: **Exercise 1:** (15 XP) Description on same line
+    // Captures: (1) number, (2) title inside bold (may be empty), (3) XP, (4) trailing text
     let re_exercise =
-        Regex::new(r"(?m)^\*\*(?:Exercise\s*)?(\d+)?[\.\):]*\s*(.+?)\*\*\s*(?:\((\d+)\s*XP\))?")
+        Regex::new(r"(?m)^\*\*(?:Exercise\s*)?(\d+)?[\.\):]*\s*(.*?)\*\*\s*(?:\((\d+)\s*XP\))?\s*(.*)?$")
             .unwrap();
     let re_xp_inline = Regex::new(r"\((\d+)\s*XP\)").unwrap();
 
@@ -652,9 +653,13 @@ fn parse_exercises(markdown: &str) -> Vec<LearningExercise> {
                     xp: current_xp,
                 });
             }
-            current_title = caps[2].trim().trim_end_matches('*').to_string();
-            // Remove XP from title if present
-            current_title = re_xp_inline.replace(&current_title, "").trim().to_string();
+            let raw_title = caps[2].trim().trim_end_matches('*').trim();
+            current_title = re_xp_inline.replace(raw_title, "").trim().to_string();
+            // If title is empty (e.g. "**Exercise 1:** (XP) description..."), use a default
+            if current_title.is_empty() {
+                let num = caps.get(1).map(|m| m.as_str()).unwrap_or("");
+                current_title = format!("Exercise {}", num).trim().to_string();
+            }
             // XP from regex group, or search the whole line as fallback
             current_xp = caps
                 .get(3)
@@ -666,6 +671,11 @@ fn parse_exercises(markdown: &str) -> Vec<LearningExercise> {
                 })
                 .unwrap_or(0);
             current_lines.clear();
+            // Capture any trailing text on the same line after the header + XP
+            let trailing = caps.get(4).map(|m| m.as_str().trim()).unwrap_or("");
+            if !trailing.is_empty() {
+                current_lines.push(trailing);
+            }
             found_any = true;
         } else if found_any {
             current_lines.push(line);
