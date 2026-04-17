@@ -56,6 +56,19 @@
 
 	<!-- Session navigation -->
 	<div class="flex-1 overflow-y-auto px-2 py-2">
+		<!-- Course overview -->
+		<button
+			class="flex items-center gap-2 w-full px-2.5 py-2 rounded-md text-left text-sm transition-all mb-1
+				{currentSessionNumber === -2
+					? 'bg-primary/10 text-primary font-semibold shadow-[inset_3px_0_0] shadow-primary'
+					: 'text-base-content/60 hover:bg-base-content/5 hover:text-base-content'}"
+			onclick={() => onSessionSelect(-2)}
+		>
+			<span class="flex-shrink-0 text-sm">🏠</span>
+			<span class="flex-1 truncate">Overview</span>
+		</button>
+		<div class="h-px bg-base-content/5 mx-1 my-1.5"></div>
+
 		<!-- Session 0 -->
 		{#if course.session_zero}
 			<button

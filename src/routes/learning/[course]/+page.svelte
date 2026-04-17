@@ -6,6 +6,7 @@
 	import SessionView from '$lib/components/SessionView.svelte';
 	import SessionZeroView from '$lib/components/SessionZeroView.svelte';
 	import MarkdownRenderer from '$lib/components/MarkdownRenderer.svelte';
+	import CourseOverview from '$lib/components/CourseOverview.svelte';
 
 	interface Props {
 		data: { courseId: string };
@@ -83,7 +84,20 @@
 
 		<div class="flex-1 overflow-y-auto" bind:this={mainContent}>
 			<div class="max-w-3xl mx-auto px-6 py-6">
-				{#if store.currentSessionNumber === -1 && store.currentCourse.appendix_markdown}
+				{#if store.currentSessionNumber === -2}
+					<!-- Course overview with tile navigation -->
+					<CourseOverview
+						course={store.currentCourse}
+						progress={store.courseProgress}
+						xpEarned={store.totalXpEarned}
+						rank={store.currentRank}
+						nextRank={store.nextRank}
+						firstIncomplete={store.firstIncompleteSession}
+						isSessionCompleted={store.isSessionCompleted.bind(store)}
+						sessionXpEarned={store.sessionXpEarned.bind(store)}
+						onSessionSelect={handleSessionSelect}
+					/>
+				{:else if store.currentSessionNumber === -1 && store.currentCourse.appendix_markdown}
 					<!-- Appendix -->
 					<div class="flex flex-col gap-4">
 						<h1 class="text-lg font-bold text-base-content">📚 Appendix</h1>

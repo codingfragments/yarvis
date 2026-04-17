@@ -131,8 +131,8 @@ export function getLearningStore() {
 					learningService.getLearningCourse(dir, filename),
 					learningService.getLearningProgress()
 				]);
-				// Auto-continue to first incomplete session
-				currentSessionNumber = this.firstIncompleteSession;
+				// Show course overview by default
+				currentSessionNumber = -2;
 			} catch (e) {
 				error = String(e);
 			} finally {
