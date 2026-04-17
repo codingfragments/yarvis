@@ -627,8 +627,10 @@ fn parse_exercises(markdown: &str) -> Vec<LearningExercise> {
         return Vec::new();
     }
 
+    // Match: **Exercise 1: Title** (30 XP)  or  **Title** (30 XP)
+    // XP can be inside or outside the bold markers
     let re_exercise =
-        Regex::new(r"(?m)^\*\*(?:Exercise\s*)?(\d+)?[\.\):]*\s*(.+?)(?:\s*\((\d+)\s*XP\))?\s*\*\*")
+        Regex::new(r"(?m)^\*\*(?:Exercise\s*)?(\d+)?[\.\):]*\s*(.+?)\*\*\s*(?:\((\d+)\s*XP\))?")
             .unwrap();
     let re_xp_inline = Regex::new(r"\((\d+)\s*XP\)").unwrap();
 
@@ -653,9 +655,15 @@ fn parse_exercises(markdown: &str) -> Vec<LearningExercise> {
             current_title = caps[2].trim().trim_end_matches('*').to_string();
             // Remove XP from title if present
             current_title = re_xp_inline.replace(&current_title, "").trim().to_string();
+            // XP from regex group, or search the whole line as fallback
             current_xp = caps
                 .get(3)
                 .and_then(|m| m.as_str().parse().ok())
+                .or_else(|| {
+                    re_xp_inline
+                        .captures(line)
+                        .and_then(|c| c[1].parse().ok())
+                })
                 .unwrap_or(0);
             current_lines.clear();
             found_any = true;
