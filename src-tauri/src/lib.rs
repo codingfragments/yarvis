@@ -16,6 +16,11 @@ pub fn run() {
             commands::briefings::read_briefing,
             commands::briefings::toggle_checkbox,
             commands::briefings::get_today_widgets,
+            commands::learning::scan_learning_courses,
+            commands::learning::get_learning_course,
+            commands::learning::get_learning_progress,
+            commands::learning::save_learning_progress,
+            commands::learning::reset_learning_progress,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Yarvis");

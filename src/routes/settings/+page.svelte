@@ -187,6 +187,42 @@
 		</div>
 	</section>
 
+	<!-- Learning -->
+	<section class="rounded-xl bg-base-200/40 border border-base-content/5 p-5 flex flex-col gap-4">
+		<h2 class="text-xs font-semibold uppercase tracking-wider text-base-content/50">Learning</h2>
+
+		<div class="form-control">
+			<label class="label" for="learning-dir">
+				<span class="label-text">Learning Courses Directory</span>
+			</label>
+			<input
+				id="learning-dir"
+				type="text"
+				class="input input-bordered input-sm w-full font-mono text-sm"
+				value={settings.current.learning_dir}
+				oninput={(e) => settings.update({ learning_dir: e.currentTarget.value })}
+			/>
+			<label class="label" for="learning-dir">
+				<span class="label-text-alt text-base-content/30">Directory containing *-curriculum.md files</span>
+			</label>
+		</div>
+
+		<div class="flex gap-2">
+			<button
+				class="btn btn-ghost btn-sm text-xs text-warning"
+				onclick={async () => {
+					if (!confirm('Reset ALL learning progress and XP?')) return;
+					const { resetLearningProgress } = await import('$lib/services/learning');
+					await resetLearningProgress();
+					saveMessage = 'All learning progress reset!';
+					setTimeout(() => (saveMessage = ''), 2000);
+				}}
+			>
+				Reset All XP
+			</button>
+		</div>
+	</section>
+
 	<!-- System Status -->
 	<section class="rounded-xl bg-base-200/40 border border-base-content/5 p-5">
 		<div class="flex items-center justify-between mb-4">

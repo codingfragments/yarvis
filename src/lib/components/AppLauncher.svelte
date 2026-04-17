@@ -34,6 +34,15 @@
 			description: 'About Yarvis'
 		},
 		{
+			id: 'learning',
+			label: 'Learning',
+			icon: '📚',
+			href: '/learning',
+			accent: '#f5a97f',
+			available: true,
+			description: 'Self-paced courses'
+		},
+		{
 			id: 'files',
 			label: 'Files',
 			icon: '📁',
