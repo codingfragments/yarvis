@@ -39,7 +39,7 @@
 <div class="flex flex-col items-center justify-center min-h-[calc(100vh-6rem)] gap-6 px-4">
 	<div class="text-center mb-2">
 		<h1 class="font-pixel text-lg tracking-wider text-primary retro-glow mb-1">YARVIS</h1>
-		<p class="text-xs text-base-content/40">Your Autonomous Resource Vault & Intelligence Suite</p>
+		<p class="text-xs text-base-content/40"><span class="text-primary/70 font-semibold">Y</span>our <span class="text-primary/70 font-semibold">A</span>utonomous <span class="text-primary/70 font-semibold">R</span>esource <span class="text-primary/70 font-semibold">V</span>ault & <span class="text-primary/70 font-semibold">I</span>ntelligence <span class="text-primary/70 font-semibold">S</span>uite</p>
 	</div>
 
 	<AppLauncher />
