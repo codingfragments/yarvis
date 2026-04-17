@@ -19,7 +19,11 @@ brew install --cask yarvis
 
 Grab the `.dmg` from the [latest release](https://github.com/codingfragments/yarvis/releases/latest).
 
-> **Note:** The app is unsigned. On first launch: right-click the app → **Open**, or allow it in **System Settings → Privacy & Security**.
+> **Note:** The app is unsigned. After installing, run:
+> ```bash
+> xattr -cr /Applications/Yarvis.app
+> ```
+> This removes the macOS quarantine flag. Without it, Gatekeeper will report the app as "damaged".
 
 ### Build from Source
 
