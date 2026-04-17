@@ -1,4 +1,4 @@
-# Yarvis — Personal Knowledge Assistant
+# YARVIS — Your Autonomous Resource Vault & Intelligence Suite
 
 Local-first desktop app built with Tauri v2 (Rust) + SvelteKit (Svelte 5) + Bun.
 
@@ -63,4 +63,14 @@ Component/Page → $lib/services/*.ts → invoke<T>() → Rust #[tauri::command]
 - SvelteKit uses `adapter-static` with `fallback: 'index.html'` (SPA mode for Tauri)
 - `+layout.ts` sets `ssr = false` and `prerender = false`
 - Vite dev server on port 1420 (matches `tauri.conf.json` devUrl)
-- Data stored in `~/.yarvis/` (settings.json, future: SQLite db, scripts)
+- Data stored in `~/.yarvis/` (settings.json, learning-progress.json, future: SQLite db, scripts)
+
+## Distribution
+
+- **Homebrew tap**: `codingfragments/homebrew-tap` repo at `../homebrew-tap`
+  - Cask file: `Casks/yarvis.rb`
+  - Install: `brew tap codingfragments/tap && brew install --cask yarvis`
+  - Cask includes `postflight` to strip macOS quarantine (`xattr -cr`) since the app is unsigned
+- **GitHub Releases**: tag `vX.Y.Z`, attach the `.dmg` from `bun run tauri:build`
+- **Release checklist**: bump version in `package.json` + `Cargo.toml` + `tauri.conf.json`, build, create release, update cask sha256 + version in `../homebrew-tap/Casks/yarvis.rb`
+- Currently arm64 (Apple Silicon) only
