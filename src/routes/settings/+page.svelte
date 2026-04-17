@@ -235,6 +235,7 @@
 		{#if learning.courses.length > 0}
 			<div class="flex flex-col gap-1.5">
 				<span class="text-xs text-base-content/40">Course Progress</span>
+				<div class="flex flex-col gap-1.5 max-h-[12.5rem] overflow-y-auto">
 				{#each learning.courses as course}
 					{@const xp = courseXp(course.id)}
 					{@const hasProgress = xp > 0 || learning.progress.courses[course.id]}
@@ -251,7 +252,8 @@
 							<span class="text-[10px] text-base-content/20">Not started</span>
 						{/if}
 					</div>
-				{/each}
+					{/each}
+				</div>
 			</div>
 		{:else if !learning.loading}
 			<div class="text-xs text-base-content/30">No courses found in configured directory</div>
