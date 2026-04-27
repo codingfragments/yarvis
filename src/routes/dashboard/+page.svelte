@@ -3,6 +3,7 @@
 	import { getDashboardStore } from '$lib/stores/dashboard.svelte';
 	import { getSettingsStore } from '$lib/stores/settings.svelte';
 	import { readPrep } from '$lib/services/dashboard';
+	import { isTauri } from '$lib/services/tauri';
 	import type { DashboardQuestion, MeetingPrep } from '$lib/types';
 	import DealPill from '$lib/components/dashboard/DealPill.svelte';
 	import UrgencyDot from '$lib/components/dashboard/UrgencyDot.svelte';
@@ -13,6 +14,9 @@
 	import QuestionEditor from '$lib/components/dashboard/QuestionEditor.svelte';
 	import QuestionStatusPill from '$lib/components/dashboard/QuestionStatusPill.svelte';
 	import MarkdownRenderer from '$lib/components/MarkdownRenderer.svelte';
+	import DealLensBar from '$lib/components/dashboard/DealLensBar.svelte';
+	import CommandPalette from '$lib/components/dashboard/CommandPalette.svelte';
+	import type { SearchItem } from '$lib/components/dashboard/CommandPalette.svelte';
 
 	const dashboard = getDashboardStore();
 	const settings = getSettingsStore();
@@ -36,13 +40,25 @@
 	let editingQuestion = $state<DashboardQuestion | null>(null);
 	let editorError = $state<string | null>(null);
 	let showOpenQuestionsOnly = $state(true);
+	let dealLens = $state<string | null>(null);
+	let paletteOpen = $state(false);
 
 	onMount(() => {
 		const h = window.location.hash.slice(1);
 		if ((TAB_KEYS as readonly string[]).includes(h)) tab = h as TabKey;
 		const t = setInterval(() => (now = new Date()), 30_000);
+		const onKey = (e: KeyboardEvent) => {
+			if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+				e.preventDefault();
+				paletteOpen = !paletteOpen;
+			}
+		};
+		window.addEventListener('keydown', onKey);
 		void load();
-		return () => clearInterval(t);
+		return () => {
+			clearInterval(t);
+			window.removeEventListener('keydown', onKey);
+		};
 	});
 
 	$effect(() => {
@@ -156,18 +172,180 @@
 		return p === 'critical' ? 0 : p === 'high' ? 1 : p === 'medium' ? 2 : 3;
 	}
 
+	// ── Deal-lens filtering ─────────────────────────────────────────────────
+	const lensActive = $derived(dealLens !== null);
+	const lensDeal = $derived(lensActive ? dashboard.dealById(dealLens) : null);
+	const lensName = $derived(lensDeal?.name ?? dealLens);
+
+	function tagsMatchDeal(tags: string[] | null | undefined, dealId: string): boolean {
+		if (!tags) return false;
+		const id = dealId.toLowerCase();
+		return tags.some((t) => t.toLowerCase() === id);
+	}
+
+	const filteredActions = $derived.by(() => {
+		const all = dashboard.briefing?.action_items ?? [];
+		return lensActive ? all.filter((a) => a.deal_tag === dealLens) : all;
+	});
+
+	const filteredPreps = $derived.by(() => {
+		const all = dashboard.briefing?.meeting_preps ?? [];
+		return lensActive ? all.filter((p) => p.deal_tag === dealLens) : all;
+	});
+
+	const filteredEvents = $derived.by(() => {
+		const all = dashboard.briefing?.calendar?.events ?? [];
+		return lensActive ? all.filter((e) => e.deal_tag === dealLens) : all;
+	});
+
+	const filteredConflicts = $derived.by(() => {
+		const all = dashboard.briefing?.calendar?.conflicts ?? [];
+		if (!lensActive) return all;
+		const visibleTitles = new Set(filteredEvents.map((e) => e.title));
+		return all.filter((c) => c.event_titles.some((t) => visibleTitles.has(t)));
+	});
+
+	const filteredEmailActToday = $derived.by(() => {
+		const all = dashboard.briefing?.email?.act_today ?? [];
+		return lensActive ? all.filter((m) => m.deal_tag === dealLens) : all;
+	});
+
+	const filteredEmailFyi = $derived.by(() => {
+		const all = dashboard.briefing?.email?.fyi ?? [];
+		return lensActive ? all.filter((m) => m.deal_tag === dealLens) : all;
+	});
+
+	const filteredChannels = $derived.by(() => {
+		const all = dashboard.briefing?.slack?.channels ?? [];
+		return lensActive ? all.filter((ch) => ch.deal_tag === dealLens) : all;
+	});
+
+	const filteredIntel = $derived.by(() => {
+		const all = dashboard.briefing?.intelligence ?? [];
+		if (!lensActive) return all;
+		return all
+			.map((cat) => ({
+				...cat,
+				items: cat.items.filter((it) => tagsMatchDeal(it.tags, dealLens!))
+			}))
+			.filter((cat) => cat.items.length > 0);
+	});
+
 	const counts = $derived.by(() => {
 		const b = dashboard.briefing;
 		if (!b) return { calendar: 0, email: 0, slack: 0, research: 0, conflicts: 0, pending: 0 };
 		return {
-			calendar: b.calendar?.events.length ?? 0,
-			email: (b.email?.act_today.length ?? 0) + (b.email?.fyi.length ?? 0),
-			slack: b.slack?.channels.length ?? 0,
-			research: b.intelligence.reduce((n, c) => n + c.items.length, 0),
-			conflicts: b.calendar?.conflicts.length ?? 0,
+			calendar: filteredEvents.length,
+			email: filteredEmailActToday.length + filteredEmailFyi.length,
+			slack: filteredChannels.length,
+			research: filteredIntel.reduce((n, c) => n + c.items.length, 0),
+			conflicts: filteredConflicts.length,
 			pending: dashboard.questions.filter((q) => q.status === 'PENDING').length
 		};
 	});
+
+	// ── Cmd-K search index ──────────────────────────────────────────────────
+	const searchItems = $derived.by(() => {
+		const items: SearchItem[] = [];
+		const lc = (s: string | null | undefined) => (s ?? '').toLowerCase();
+
+		filteredActions.forEach((a, i) => {
+			items.push({
+				id: `action:${a.id}`,
+				kind: 'action',
+				title: a.text,
+				subtitle: [a.deadline, a.deal_tag].filter(Boolean).join(' · ') || undefined,
+				hay: lc([a.text, a.deadline, a.deal_tag, a.source_type].filter(Boolean).join(' ')),
+				url: a.url
+			});
+		});
+
+		filteredEmailActToday.concat(filteredEmailFyi).forEach((m) => {
+			items.push({
+				id: `email:${m.id}`,
+				kind: 'email',
+				title: m.subject,
+				subtitle: `${m.from}${m.deal_tag ? ' · ' + m.deal_tag : ''}`,
+				hay: lc([m.from, m.subject, m.summary, m.action, m.context, m.deal_tag, ...(m.tags ?? [])].filter(Boolean).join(' ')),
+				url: m.url
+			});
+		});
+
+		filteredChannels.forEach((ch) => {
+			items.push({
+				id: `channel:${ch.channel_id}`,
+				kind: 'slack-channel',
+				title: ch.channel_name,
+				subtitle: `${ch.activity_level}${ch.deal_tag ? ' · ' + ch.deal_tag : ''}`,
+				hay: lc([ch.channel_name, ch.deal_tag, ch.activity_level].filter(Boolean).join(' ')),
+				url: ch.url
+			});
+			ch.messages.forEach((msg, mi) => {
+				items.push({
+					id: `msg:${ch.channel_id}:${mi}`,
+					kind: 'slack-message',
+					title: msg.summary,
+					subtitle: `${msg.author ?? 'unknown'} · ${ch.channel_name}`,
+					hay: lc([msg.author, msg.summary, msg.action, ch.channel_name].filter(Boolean).join(' ')),
+					url: ch.url
+				});
+			});
+		});
+
+		filteredEvents.forEach((e, i) => {
+			items.push({
+				id: `event:${i}`,
+				kind: 'event',
+				title: e.title,
+				subtitle: `${e.start}–${e.end}${e.deal_tag ? ' · ' + e.deal_tag : ''}`,
+				hay: lc([e.title, e.notes, e.initiative, e.deal_tag, ...(e.participants ?? [])].filter(Boolean).join(' ')),
+				url: e.links?.zoom ?? e.links?.doc ?? e.links?.other ?? null
+			});
+		});
+
+		filteredPreps.forEach((p, i) => {
+			items.push({
+				id: `prep:${i}`,
+				kind: 'prep',
+				title: p.title,
+				subtitle: `${p.time}${p.deal_tag ? ' · ' + p.deal_tag : ''}`,
+				hay: lc([p.title, p.deal_tag, p.time].filter(Boolean).join(' ')),
+				prepIndex: i
+			});
+		});
+
+		filteredIntel.forEach((cat) => {
+			cat.items.forEach((it, i) => {
+				items.push({
+					id: `intel:${cat.category_id}:${i}`,
+					kind: 'intel',
+					title: it.headline,
+					subtitle: it.source ?? cat.category_id,
+					hay: lc([it.headline, it.detail, it.relevance, ...(it.tags ?? [])].filter(Boolean).join(' ')),
+					url: it.url
+				});
+			});
+		});
+
+		return items;
+	});
+
+	async function dispatchSearchSelection(item: SearchItem) {
+		paletteOpen = false;
+		if (item.kind === 'prep') {
+			const prep = filteredPreps[item.prepIndex ?? -1];
+			if (prep) await openPrep(prep);
+			return;
+		}
+		if (item.url) {
+			if (isTauri()) {
+				const { open } = await import('@tauri-apps/plugin-shell');
+				await open(item.url);
+			} else {
+				window.open(item.url, '_blank', 'noopener');
+			}
+		}
+	}
 </script>
 
 <div
@@ -218,6 +396,14 @@
 			</span>
 		{/if}
 
+		<button
+			class="btn btn-ghost btn-sm text-[11px] gap-1.5 hidden sm:inline-flex"
+			onclick={() => (paletteOpen = true)}
+			title="Search today (⌘K)"
+		>
+			🔎
+			<kbd class="text-[9px] font-mono px-1 py-0.5 bg-base-300/50 rounded border border-base-content/10">⌘K</kbd>
+		</button>
 		<button
 			class="btn btn-primary btn-sm text-xs"
 			onclick={load}
@@ -278,6 +464,12 @@
 	{#if dashboard.briefing}
 		{@const b = dashboard.briefing}
 
+		<DealLensBar
+			deals={dashboard.config?.active_deals ?? []}
+			selected={dealLens}
+			onSelect={(id) => (dealLens = id)}
+		/>
+
 		<!-- Two-pane body -->
 		<div
 			class="md:flex-1 md:min-h-0 flex flex-col md:flex-row gap-4 pt-3 pb-4"
@@ -295,13 +487,15 @@
 						onToggle={(o) => (actionsOpen = o)}
 						icon="⚡"
 						title="Action items"
-						count={b.action_items.length}
+						count={filteredActions.length}
 					>
-						{#if b.action_items.length === 0}
-							<p class="text-xs text-base-content/40">Nothing queued.</p>
+						{#if filteredActions.length === 0}
+							<p class="text-xs text-base-content/40 italic">
+								{lensActive ? `No actions for ${lensName}.` : 'Nothing queued.'}
+							</p>
 						{:else}
 							<ul class="flex flex-col gap-2">
-								{#each [...b.action_items].sort((a, c) => priorityRank(a.priority) - priorityRank(c.priority)) as a}
+								{#each [...filteredActions].sort((a, c) => priorityRank(a.priority) - priorityRank(c.priority)) as a}
 									{@const deal = dashboard.dealById(a.deal_tag)}
 									<li class="rounded-lg bg-base-100/40 border border-base-content/5 px-3 py-2.5 flex flex-col gap-1.5">
 										<div class="flex items-start gap-2">
@@ -322,7 +516,7 @@
 				</div>
 
 				<!-- Meeting preps: takes share of remaining height when open, scrolls internally -->
-				{#if b.meeting_preps.length > 0}
+				{#if filteredPreps.length > 0}
 					<div class={prepsOpen ? 'md:flex-1 md:min-h-0' : 'md:shrink-0'}>
 						<SectionCard
 							fillHeight={prepsOpen}
@@ -331,10 +525,10 @@
 							onToggle={(o) => (prepsOpen = o)}
 							icon="📝"
 							title="Meeting preps"
-							count={b.meeting_preps.length}
+							count={filteredPreps.length}
 						>
 							<ul class="flex flex-col gap-1.5">
-								{#each b.meeting_preps as p}
+								{#each filteredPreps as p}
 									{@const deal = dashboard.dealById(p.deal_tag)}
 									<li class="flex items-center gap-2 text-xs">
 										<span class="font-mono text-base-content/50 w-12">{p.time}</span>
@@ -533,12 +727,12 @@
 
 					{:else if tab === 'calendar' && b.calendar}
 						<div class="flex flex-col gap-3">
-							{#if b.calendar.summary}
+							{#if b.calendar.summary && !lensActive}
 								<p class="text-xs text-base-content/60 italic">{b.calendar.summary}</p>
 							{/if}
-							{#if b.calendar.conflicts.length > 0}
+							{#if filteredConflicts.length > 0}
 								<div class="flex flex-col gap-2">
-									{#each b.calendar.conflicts as c}
+									{#each filteredConflicts as c}
 										<div class="rounded-lg bg-warning/10 border border-warning/20 px-3 py-2.5">
 											<div class="flex items-center gap-2 text-xs font-medium text-warning mb-1">⚠️ Conflict at {c.time}</div>
 											<p class="text-xs text-base-content/80">{c.description}</p>
@@ -549,8 +743,13 @@
 									{/each}
 								</div>
 							{/if}
+							{#if filteredEvents.length === 0}
+								<p class="text-xs text-base-content/40 italic">
+									{lensActive ? `No events for ${lensName}.` : 'No events today.'}
+								</p>
+							{/if}
 							<ul class="flex flex-col gap-1">
-								{#each b.calendar.events as e}
+								{#each filteredEvents as e}
 									{@const deal = dashboard.dealById(e.deal_tag)}
 									<li
 										class="flex items-stretch gap-3 rounded-lg border-l-2 {eventBorder(e.type, e.urgency)} bg-base-100/30 px-3 py-2 text-xs {eventClass(e.type)}"
@@ -580,11 +779,16 @@
 
 					{:else if tab === 'email' && b.email}
 						<div class="flex flex-col gap-4">
-							{#if b.email.act_today.length > 0}
+							{#if filteredEmailActToday.length === 0 && filteredEmailFyi.length === 0}
+								<p class="text-xs text-base-content/40 italic">
+									{lensActive ? `No email for ${lensName}.` : 'No email today.'}
+								</p>
+							{/if}
+							{#if filteredEmailActToday.length > 0}
 								<div>
 									<div class="text-[10px] uppercase tracking-wider text-base-content/50 font-semibold mb-2">Act today</div>
 									<ul class="flex flex-col gap-2">
-										{#each b.email.act_today as m}
+										{#each filteredEmailActToday as m}
 											{@const deal = dashboard.dealById(m.deal_tag)}
 											<li class="rounded-lg border-l-4 border-error/60 bg-base-100/40 px-3 py-2.5">
 												<div class="flex items-center gap-2 mb-1 flex-wrap">
@@ -601,11 +805,11 @@
 									</ul>
 								</div>
 							{/if}
-							{#if b.email.fyi.length > 0}
+							{#if filteredEmailFyi.length > 0}
 								<div>
 									<div class="text-[10px] uppercase tracking-wider text-base-content/50 font-semibold mb-2">FYI</div>
 									<ul class="flex flex-col gap-1.5">
-										{#each b.email.fyi as m}
+										{#each filteredEmailFyi as m}
 											{@const deal = dashboard.dealById(m.deal_tag)}
 											<li class="rounded-lg border border-base-content/10 bg-base-100/20 px-3 py-2 text-xs">
 												<div class="flex items-center gap-2 mb-0.5 flex-wrap">
@@ -622,7 +826,7 @@
 									</ul>
 								</div>
 							{/if}
-							{#if b.email.no_action_summary}
+							{#if b.email.no_action_summary && !lensActive}
 								<p class="text-[10px] text-base-content/40 italic border-t border-base-content/5 pt-2">
 									{b.email.no_action_summary}
 								</p>
@@ -631,11 +835,16 @@
 
 					{:else if tab === 'slack' && b.slack}
 						<div class="flex flex-col gap-3">
-							{#if b.slack.since}
+							{#if b.slack.since && !lensActive}
 								<p class="text-[10px] text-base-content/50">Since {b.slack.since}</p>
 							{/if}
+							{#if filteredChannels.length === 0}
+								<p class="text-xs text-base-content/40 italic">
+									{lensActive ? `No slack channels for ${lensName}.` : 'No slack activity.'}
+								</p>
+							{/if}
 							<ul class="flex flex-col gap-3">
-								{#each b.slack.channels as ch}
+								{#each filteredChannels as ch}
 									{@const deal = dashboard.dealById(ch.deal_tag)}
 									<li class="rounded-lg bg-base-100/30 border border-base-content/5 p-3">
 										<div class="flex items-center gap-2 mb-2 flex-wrap">
@@ -677,7 +886,7 @@
 									</li>
 								{/each}
 							</ul>
-							{#if b.slack.dms.length > 0}
+							{#if !lensActive && b.slack.dms.length > 0}
 								<div>
 									<div class="text-[10px] uppercase tracking-wider text-base-content/50 font-semibold mb-2">DMs</div>
 									<ul class="flex flex-col gap-1.5">
@@ -698,7 +907,12 @@
 
 					{:else if tab === 'research'}
 						<div class="flex flex-col gap-3">
-							{#each b.intelligence as cat}
+							{#if filteredIntel.length === 0}
+								<p class="text-xs text-base-content/40 italic">
+									{lensActive ? `No intel tagged for ${lensName}.` : 'No intelligence items today.'}
+								</p>
+							{/if}
+							{#each filteredIntel as cat}
 								{@const def = dashboard.categoryById(cat.category_id)}
 								<SectionCard
 									icon={def?.icon ?? '📰'}
@@ -721,9 +935,6 @@
 									</ul>
 								</SectionCard>
 							{/each}
-							{#if b.intelligence.length === 0}
-								<p class="text-xs text-base-content/40">No intelligence items today.</p>
-							{/if}
 						</div>
 					{:else}
 						<p class="text-xs text-base-content/40">Nothing to show.</p>
@@ -766,4 +977,11 @@
 		editingQuestion = null;
 		editorError = null;
 	}}
+/>
+
+<CommandPalette
+	open={paletteOpen}
+	items={searchItems}
+	onClose={() => (paletteOpen = false)}
+	onSelect={dispatchSearchSelection}
 />
