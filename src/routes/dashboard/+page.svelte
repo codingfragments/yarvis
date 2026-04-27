@@ -19,6 +19,8 @@
 	let menuOpen = $state(false);
 	let funShowJoke = $state(false);
 	let now = $state(new Date());
+	let actionsOpen = $state(true);
+	let prepsOpen = $state(false);
 
 	onMount(() => {
 		const h = window.location.hash.slice(1);
@@ -227,9 +229,17 @@
 			<aside
 				class="order-2 md:order-none md:w-80 md:shrink-0 flex flex-col gap-3 md:min-h-0"
 			>
-				<!-- Actions: takes share of remaining height, scrolls internally -->
-				<div class="md:flex-1 md:min-h-0">
-					<SectionCard fillHeight icon="⚡" title="Action items" count={b.action_items.length}>
+				<!-- Actions: takes share of remaining height when open, scrolls internally -->
+				<div class={actionsOpen ? 'md:flex-1 md:min-h-0' : 'md:shrink-0'}>
+					<SectionCard
+						fillHeight={actionsOpen}
+						collapsible
+						defaultOpen
+						onToggle={(o) => (actionsOpen = o)}
+						icon="⚡"
+						title="Action items"
+						count={b.action_items.length}
+					>
 						{#if b.action_items.length === 0}
 							<p class="text-xs text-base-content/40">Nothing queued.</p>
 						{:else}
@@ -254,10 +264,18 @@
 					</SectionCard>
 				</div>
 
-				<!-- Meeting preps: takes share of remaining height, scrolls internally -->
+				<!-- Meeting preps: takes share of remaining height when open, scrolls internally -->
 				{#if b.meeting_preps.length > 0}
-					<div class="md:flex-1 md:min-h-0">
-						<SectionCard fillHeight icon="📝" title="Meeting preps" count={b.meeting_preps.length}>
+					<div class={prepsOpen ? 'md:flex-1 md:min-h-0' : 'md:shrink-0'}>
+						<SectionCard
+							fillHeight={prepsOpen}
+							collapsible
+							defaultOpen={false}
+							onToggle={(o) => (prepsOpen = o)}
+							icon="📝"
+							title="Meeting preps"
+							count={b.meeting_preps.length}
+						>
 							<ul class="flex flex-col gap-1.5">
 								{#each b.meeting_preps as p}
 									{@const deal = dashboard.dealById(p.deal_tag)}

@@ -9,6 +9,7 @@
 		collapsible?: boolean;
 		defaultOpen?: boolean;
 		fillHeight?: boolean;
+		onToggle?: (open: boolean) => void;
 		children: Snippet;
 		actions?: Snippet;
 	}
@@ -21,6 +22,7 @@
 		collapsible = false,
 		defaultOpen = true,
 		fillHeight = false,
+		onToggle,
 		children,
 		actions
 	}: Props = $props();
@@ -28,6 +30,11 @@
 	// eslint-disable-next-line svelte/no-state-referenced-locally
 	// svelte-ignore state_referenced_locally
 	let open = $state(defaultOpen);
+
+	function toggle() {
+		open = !open;
+		onToggle?.(open);
+	}
 </script>
 
 <section
@@ -51,11 +58,13 @@
 		{/if}
 		{#if collapsible}
 			<button
-				class="btn btn-ghost btn-xs text-[11px]"
-				onclick={() => (open = !open)}
+				class="btn btn-ghost btn-sm h-8 min-h-8 w-8 px-0 text-lg leading-none"
+				onclick={toggle}
 				aria-expanded={open}
+				aria-label={open ? 'Collapse section' : 'Expand section'}
+				title={open ? 'Collapse' : 'Expand'}
 			>
-				{open ? '▾' : '▸'}
+				<span class="inline-block transition-transform" class:rotate-90={open}>▶</span>
 			</button>
 		{/if}
 	</header>
