@@ -403,6 +403,30 @@ pub fn read_memory(daily_dir: String) -> Result<String, String> {
     fs::read_to_string(&path).map_err(|e| format!("Failed to read memory.md: {}", e))
 }
 
+/// Read a single meeting-prep markdown file from the dated briefings folder.
+/// Refuses anything that isn't a `meeting-prep-*.md` (so morning-briefing
+/// files and arbitrary paths can never be opened through this command).
+#[tauri::command]
+pub fn read_prep(
+    briefings_dir: String,
+    briefing_date: String,
+    filename: String,
+) -> Result<String, String> {
+    if !filename.starts_with("meeting-prep-") || !filename.ends_with(".md") {
+        return Err(format!(
+            "Refusing to read non-prep file: {}",
+            filename
+        ));
+    }
+    if filename.contains('/') || filename.contains('\\') || filename.contains("..") {
+        return Err("Invalid filename".to_string());
+    }
+
+    let folder_name = briefing_date.replace('-', "_");
+    let path = resolve_dir(&briefings_dir).join(&folder_name).join(&filename);
+    fs::read_to_string(&path).map_err(|e| format!("Failed to read {}: {}", filename, e))
+}
+
 #[tauri::command]
 pub fn daily_status(daily_dir: String) -> Result<DailyStatus, String> {
     let dir = resolve_dir(&daily_dir);

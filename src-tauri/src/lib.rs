@@ -19,6 +19,7 @@ pub fn run() {
             commands::dashboard::read_daily,
             commands::dashboard::read_config,
             commands::dashboard::read_memory,
+            commands::dashboard::read_prep,
             commands::dashboard::daily_status,
             commands::dashboard::read_questions,
             commands::learning::scan_learning_courses,

@@ -2,11 +2,14 @@
 	import { onMount } from 'svelte';
 	import { getDashboardStore } from '$lib/stores/dashboard.svelte';
 	import { getSettingsStore } from '$lib/stores/settings.svelte';
+	import { readPrep } from '$lib/services/dashboard';
+	import type { MeetingPrep } from '$lib/types';
 	import DealPill from '$lib/components/dashboard/DealPill.svelte';
 	import UrgencyDot from '$lib/components/dashboard/UrgencyDot.svelte';
 	import SectionCard from '$lib/components/dashboard/SectionCard.svelte';
 	import ExternalLink from '$lib/components/dashboard/ExternalLink.svelte';
 	import MemoryDrawer from '$lib/components/dashboard/MemoryDrawer.svelte';
+	import PrepDrawer from '$lib/components/dashboard/PrepDrawer.svelte';
 
 	const dashboard = getDashboardStore();
 	const settings = getSettingsStore();
@@ -21,6 +24,11 @@
 	let now = $state(new Date());
 	let actionsOpen = $state(true);
 	let prepsOpen = $state(false);
+	let prepDrawerOpen = $state(false);
+	let prepLoading = $state(false);
+	let prepContent = $state<string | null>(null);
+	let prepError = $state<string | null>(null);
+	let prepMeta = $state<{ title: string; time: string; filename: string } | null>(null);
 
 	onMount(() => {
 		const h = window.location.hash.slice(1);
@@ -46,6 +54,26 @@
 		menuOpen = false;
 		await dashboard.loadMemory(settings.current.daily_dir);
 		memoryOpen = true;
+	}
+
+	async function openPrep(p: MeetingPrep) {
+		if (!p.file || !dashboard.briefing) return;
+		prepMeta = { title: p.title, time: p.time, filename: p.file };
+		prepContent = null;
+		prepError = null;
+		prepLoading = true;
+		prepDrawerOpen = true;
+		try {
+			prepContent = await readPrep(
+				settings.current.briefings_dir,
+				dashboard.briefing.meta.briefing_date,
+				p.file
+			);
+		} catch (e) {
+			prepError = String(e);
+		} finally {
+			prepLoading = false;
+		}
 	}
 
 	function liveMinutesAway(startsAt: string | null | undefined): number | null {
@@ -284,7 +312,11 @@
 										<span class="flex-1 truncate text-base-content/80" title={p.title}>{p.title}</span>
 										<DealPill {deal} fallbackId={p.deal_tag} />
 										{#if p.file}
-											<a href="/briefings" class="text-[11px] text-primary hover:underline" title="Open in Briefings viewer">open</a>
+											<button
+												class="text-[11px] text-primary hover:underline"
+												onclick={() => openPrep(p)}
+												title="Open prep document"
+											>open</button>
 										{/if}
 									</li>
 								{/each}
@@ -629,3 +661,14 @@
 </div>
 
 <MemoryDrawer open={memoryOpen} memory={dashboard.memory} onClose={() => (memoryOpen = false)} />
+
+<PrepDrawer
+	open={prepDrawerOpen}
+	title={prepMeta?.title ?? null}
+	time={prepMeta?.time ?? null}
+	filename={prepMeta?.filename ?? null}
+	content={prepContent}
+	loading={prepLoading}
+	error={prepError}
+	onClose={() => (prepDrawerOpen = false)}
+/>
