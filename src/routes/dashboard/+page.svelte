@@ -9,8 +9,7 @@
 	import UrgencyDot from '$lib/components/dashboard/UrgencyDot.svelte';
 	import SectionCard from '$lib/components/dashboard/SectionCard.svelte';
 	import ExternalLink from '$lib/components/dashboard/ExternalLink.svelte';
-	import MemoryDrawer from '$lib/components/dashboard/MemoryDrawer.svelte';
-	import PrepDrawer from '$lib/components/dashboard/PrepDrawer.svelte';
+	import MarkdownViewer from '$lib/components/dashboard/MarkdownViewer.svelte';
 	import QuestionEditor from '$lib/components/dashboard/QuestionEditor.svelte';
 	import QuestionStatusPill from '$lib/components/dashboard/QuestionStatusPill.svelte';
 	import MarkdownRenderer from '$lib/components/MarkdownRenderer.svelte';
@@ -49,6 +48,8 @@
 		const t = setInterval(() => (now = new Date()), 30_000);
 		const onKey = (e: KeyboardEvent) => {
 			if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+				// Defer to the MarkdownViewer when one is open
+				if (memoryOpen || prepDrawerOpen) return;
 				e.preventDefault();
 				paletteOpen = !paletteOpen;
 			}
@@ -953,13 +954,20 @@
 	{/if}
 </div>
 
-<MemoryDrawer open={memoryOpen} memory={dashboard.memory} onClose={() => (memoryOpen = false)} />
+<MarkdownViewer
+	open={memoryOpen}
+	icon="📒"
+	title="Memory"
+	subtitle={null}
+	content={dashboard.memory}
+	onClose={() => (memoryOpen = false)}
+/>
 
-<PrepDrawer
+<MarkdownViewer
 	open={prepDrawerOpen}
-	title={prepMeta?.title ?? null}
-	time={prepMeta?.time ?? null}
-	filename={prepMeta?.filename ?? null}
+	icon="📝"
+	title={prepMeta?.title ?? 'Meeting prep'}
+	subtitle={prepMeta ? `${prepMeta.time} · ${prepMeta.filename}` : null}
 	content={prepContent}
 	loading={prepLoading}
 	error={prepError}
