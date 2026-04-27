@@ -6,8 +6,8 @@ import type {
 	DashboardQuestion
 } from '$lib/types';
 
-export async function readDaily(dailyDir: string): Promise<DailyBriefing> {
-	return invoke<DailyBriefing>('read_daily', { dailyDir });
+export async function readDaily(dailyDir: string, briefingsDir: string): Promise<DailyBriefing> {
+	return invoke<DailyBriefing>('read_daily', { dailyDir, briefingsDir });
 }
 
 export async function readConfig(dailySrcDir: string): Promise<BriefingConfig> {

@@ -36,7 +36,7 @@ export function getDashboardStore() {
 			return config.intelligence_categories.find((c) => c.id === id) ?? null;
 		},
 
-		async load(dailyDir: string, dailySrcDir: string) {
+		async load(dailyDir: string, dailySrcDir: string, briefingsDir: string) {
 			if (!isTauri()) {
 				error = 'Dashboard requires Tauri runtime — start with `bun run tauri:dev`.';
 				return;
@@ -45,7 +45,7 @@ export function getDashboardStore() {
 			error = null;
 			try {
 				const [b, c, q] = await Promise.allSettled([
-					dashboardService.readDaily(dailyDir),
+					dashboardService.readDaily(dailyDir, briefingsDir),
 					dashboardService.readConfig(dailySrcDir),
 					dashboardService.readQuestions(dailyDir)
 				]);

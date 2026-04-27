@@ -38,8 +38,8 @@
 
 	async function load() {
 		await settings.load();
-		const { daily_dir, daily_src_dir } = settings.current;
-		await dashboard.load(daily_dir, daily_src_dir);
+		const { daily_dir, daily_src_dir, briefings_dir } = settings.current;
+		await dashboard.load(daily_dir, daily_src_dir, briefings_dir);
 	}
 
 	async function openMemory() {

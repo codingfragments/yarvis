@@ -334,12 +334,58 @@ pub struct DashboardQuestion {
 // ── Commands ────────────────────────────────────────────────────────────────
 
 #[tauri::command]
-pub fn read_daily(daily_dir: String) -> Result<DailyBriefing, String> {
+pub fn read_daily(daily_dir: String, briefings_dir: String) -> Result<DailyBriefing, String> {
     let path = resolve_dir(&daily_dir).join("daily.json");
     let raw = fs::read_to_string(&path)
         .map_err(|e| format!("Failed to read daily.json at {}: {}", path.display(), e))?;
-    serde_json::from_str::<DailyBriefing>(&raw)
-        .map_err(|e| format!("daily.json parse error: {}", e))
+    let mut briefing: DailyBriefing = serde_json::from_str(&raw)
+        .map_err(|e| format!("daily.json parse error: {}", e))?;
+
+    let briefings_root = resolve_dir(&briefings_dir);
+    briefing.meeting_preps =
+        resolve_meeting_preps(&briefings_root, &briefing.meta.briefing_date, briefing.meeting_preps);
+
+    Ok(briefing)
+}
+
+/// Filter meeting_preps to only those that have a matching `meeting-prep-HHMM-*.md`
+/// on disk in the dated briefings folder, and backfill the `file` field with the
+/// real filename. Entries without a matching prep file are dropped.
+fn resolve_meeting_preps(
+    briefings_root: &PathBuf,
+    briefing_date: &str,
+    preps: Vec<MeetingPrep>,
+) -> Vec<MeetingPrep> {
+    let folder_name = briefing_date.replace('-', "_");
+    let dated_dir = briefings_root.join(&folder_name);
+    if !dated_dir.is_dir() {
+        return Vec::new();
+    }
+
+    let mut prep_files: Vec<String> = match fs::read_dir(&dated_dir) {
+        Ok(entries) => entries
+            .filter_map(|e| e.ok())
+            .map(|e| e.file_name().to_string_lossy().to_string())
+            .filter(|n| n.starts_with("meeting-prep-") && n.ends_with(".md"))
+            .collect(),
+        Err(_) => Vec::new(),
+    };
+    prep_files.sort();
+
+    preps
+        .into_iter()
+        .filter_map(|mut p| {
+            let compact_time = p.time.replace(':', "");
+            let prefix = format!("meeting-prep-{}-", compact_time);
+            prep_files
+                .iter()
+                .find(|name| name.starts_with(&prefix))
+                .map(|name| {
+                    p.file = Some(name.clone());
+                    p
+                })
+        })
+        .collect()
 }
 
 #[tauri::command]
