@@ -31,6 +31,22 @@ pub struct Settings {
     pub briefings_dir: String,
     pub briefings_max_days: u32,
     pub learning_dir: String,
+    #[serde(default = "default_daily_dir")]
+    pub daily_dir: String,
+    #[serde(default = "default_daily_src_dir")]
+    pub daily_src_dir: String,
+}
+
+fn default_daily_dir() -> String {
+    dirs::home_dir()
+        .map(|h| h.join("claude-chats/briefings/daily").to_string_lossy().to_string())
+        .unwrap_or_default()
+}
+
+fn default_daily_src_dir() -> String {
+    dirs::home_dir()
+        .map(|h| h.join("claude-chats/src/daily").to_string_lossy().to_string())
+        .unwrap_or_default()
 }
 
 impl Default for Settings {
@@ -51,6 +67,8 @@ impl Default for Settings {
             learning_dir: dirs::home_dir()
                 .map(|h| h.join("claude-chats/learning").to_string_lossy().to_string())
                 .unwrap_or_default(),
+            daily_dir: default_daily_dir(),
+            daily_src_dir: default_daily_src_dir(),
         }
     }
 }

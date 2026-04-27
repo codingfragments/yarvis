@@ -7,6 +7,15 @@
 
 	const appTiles: AppTileConfig[] = [
 		{
+			id: 'dashboard',
+			label: 'Dashboard',
+			icon: '📊',
+			href: '/dashboard',
+			accent: '#a6da95',
+			available: true,
+			description: 'Today at a glance'
+		},
+		{
 			id: 'briefings',
 			label: 'Briefings',
 			icon: '📋',

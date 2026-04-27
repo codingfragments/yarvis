@@ -12,7 +12,9 @@ const DEFAULT_SETTINGS: Settings = {
 	python_path: 'python3',
 	briefings_dir: '~/claude-chats/briefings',
 	briefings_max_days: 5,
-	learning_dir: '~/claude-chats/learning'
+	learning_dir: '~/claude-chats/learning',
+	daily_dir: '~/claude-chats/briefings/daily',
+	daily_src_dir: '~/claude-chats/src/daily'
 };
 
 let settings = $state<Settings>({ ...DEFAULT_SETTINGS });
