@@ -112,10 +112,10 @@
 </script>
 
 <div
-	class="max-w-7xl mx-auto px-4 lg:h-[calc(100dvh-6rem)] lg:flex lg:flex-col"
+	class="max-w-7xl mx-auto px-4 md:h-[calc(100dvh-6rem)] md:flex md:flex-col"
 >
 	<!-- Top strip -->
-	<header class="lg:shrink-0 flex items-center gap-3 py-3 border-b border-base-content/5">
+	<header class="md:shrink-0 flex items-center gap-3 py-3 border-b border-base-content/5">
 		<a href="/" class="btn btn-ghost btn-sm text-xs">← Back</a>
 		<div class="flex-1 min-w-0">
 			<h1 class="text-base font-semibold text-base-content leading-tight">Dashboard</h1>
@@ -132,7 +132,7 @@
 			{@const nextMins = liveMinutesAway(b.meta.next_meeting?.starts_at)}
 
 			{#if b.meta.next_meeting && nextMins !== null}
-				<div class="hidden md:flex items-center gap-1.5 text-xs text-base-content/70 max-w-xs">
+				<div class="hidden lg:flex items-center gap-1.5 text-xs text-base-content/70 max-w-xs">
 					<span class="opacity-60">next:</span>
 					<span class="font-medium text-base-content truncate">{b.meta.next_meeting.title}</span>
 					<span
@@ -221,72 +221,79 @@
 
 		<!-- Two-pane body -->
 		<div
-			class="lg:flex-1 lg:min-h-0 grid grid-cols-1 lg:grid-cols-[20rem_1fr] gap-4 pt-3 pb-4"
+			class="md:flex-1 md:min-h-0 flex flex-col md:flex-row gap-4 pt-3 pb-4"
 		>
-			<!-- Left rail (independent scroll on lg) -->
+			<!-- Left rail (independent scroll on md+) -->
 			<aside
-				class="order-2 lg:order-none flex flex-col gap-4 lg:overflow-y-auto lg:min-h-0 lg:pr-1"
+				class="order-2 md:order-none md:w-80 md:shrink-0 flex flex-col gap-3 md:min-h-0"
 			>
-				<SectionCard icon="⚡" title="Action items" count={b.action_items.length}>
-					{#if b.action_items.length === 0}
-						<p class="text-xs text-base-content/40">Nothing queued.</p>
-					{:else}
-						<ul class="flex flex-col gap-2">
-							{#each [...b.action_items].sort((a, c) => priorityRank(a.priority) - priorityRank(c.priority)) as a}
-								{@const deal = dashboard.dealById(a.deal_tag)}
-								<li class="rounded-lg bg-base-100/40 border border-base-content/5 px-3 py-2.5 flex flex-col gap-1.5">
-									<div class="flex items-start gap-2">
-										<UrgencyDot urgency={a.priority} size="md" />
-										<p class="flex-1 text-xs text-base-content/85 leading-snug">{a.text}</p>
-									</div>
-									<div class="flex items-center gap-1.5 flex-wrap text-[10px] text-base-content/50">
-										{#if a.deadline}<span class="font-mono">⏰ {a.deadline}</span>{/if}
-										{#if a.source_type}<span class="opacity-60">· {a.source_type}</span>{/if}
-										<DealPill {deal} fallbackId={a.deal_tag} />
-										{#if a.url}<ExternalLink href={a.url} label="open" />{/if}
-									</div>
-								</li>
-							{/each}
-						</ul>
-					{/if}
-				</SectionCard>
-
-				{#if b.meeting_preps.length > 0}
-					<SectionCard icon="📝" title="Meeting preps" count={b.meeting_preps.length}>
-						<ul class="flex flex-col gap-1.5">
-							{#each b.meeting_preps as p}
-								{@const deal = dashboard.dealById(p.deal_tag)}
-								<li class="flex items-center gap-2 text-xs">
-									<span class="font-mono text-base-content/50 w-12">{p.time}</span>
-									<span class="flex-1 truncate text-base-content/80" title={p.title}>{p.title}</span>
-									<DealPill {deal} fallbackId={p.deal_tag} />
-									{#if p.file}
-										<a href="/briefings" class="text-[11px] text-primary hover:underline" title="Open in Briefings viewer">open</a>
-									{/if}
-								</li>
-							{/each}
-						</ul>
+				<!-- Actions: takes share of remaining height, scrolls internally -->
+				<div class="md:flex-1 md:min-h-0">
+					<SectionCard fillHeight icon="⚡" title="Action items" count={b.action_items.length}>
+						{#if b.action_items.length === 0}
+							<p class="text-xs text-base-content/40">Nothing queued.</p>
+						{:else}
+							<ul class="flex flex-col gap-2">
+								{#each [...b.action_items].sort((a, c) => priorityRank(a.priority) - priorityRank(c.priority)) as a}
+									{@const deal = dashboard.dealById(a.deal_tag)}
+									<li class="rounded-lg bg-base-100/40 border border-base-content/5 px-3 py-2.5 flex flex-col gap-1.5">
+										<div class="flex items-start gap-2">
+											<UrgencyDot urgency={a.priority} size="md" />
+											<p class="flex-1 text-xs text-base-content/85 leading-snug">{a.text}</p>
+										</div>
+										<div class="flex items-center gap-1.5 flex-wrap text-[10px] text-base-content/50">
+											{#if a.deadline}<span class="font-mono">⏰ {a.deadline}</span>{/if}
+											{#if a.source_type}<span class="opacity-60">· {a.source_type}</span>{/if}
+											<DealPill {deal} fallbackId={a.deal_tag} />
+											{#if a.url}<ExternalLink href={a.url} label="open" />{/if}
+										</div>
+									</li>
+								{/each}
+							</ul>
+						{/if}
 					</SectionCard>
+				</div>
+
+				<!-- Meeting preps: takes share of remaining height, scrolls internally -->
+				{#if b.meeting_preps.length > 0}
+					<div class="md:flex-1 md:min-h-0">
+						<SectionCard fillHeight icon="📝" title="Meeting preps" count={b.meeting_preps.length}>
+							<ul class="flex flex-col gap-1.5">
+								{#each b.meeting_preps as p}
+									{@const deal = dashboard.dealById(p.deal_tag)}
+									<li class="flex items-center gap-2 text-xs">
+										<span class="font-mono text-base-content/50 w-12">{p.time}</span>
+										<span class="flex-1 truncate text-base-content/80" title={p.title}>{p.title}</span>
+										<DealPill {deal} fallbackId={p.deal_tag} />
+										{#if p.file}
+											<a href="/briefings" class="text-[11px] text-primary hover:underline" title="Open in Briefings viewer">open</a>
+										{/if}
+									</li>
+								{/each}
+							</ul>
+						</SectionCard>
+					</div>
 				{/if}
 
+				<!-- Fun: pinned at the bottom -->
 				{#if b.fun && (b.fun.fact || b.fun.joke)}
 					<button
-						class="rounded-xl bg-gradient-to-br from-secondary/10 via-accent/5 to-primary/10 border border-base-content/5 p-4 text-left hover:scale-[1.01] transition-transform"
+						class="md:shrink-0 rounded-xl bg-gradient-to-br from-secondary/10 via-accent/5 to-primary/10 border border-base-content/5 p-3 text-left hover:scale-[1.01] transition-transform"
 						onclick={() => (funShowJoke = !funShowJoke)}
 						title="Click to flip"
 					>
-						<div class="text-[10px] uppercase tracking-wider text-base-content/50 mb-1.5">
+						<div class="text-[10px] uppercase tracking-wider text-base-content/50 mb-1">
 							{funShowJoke ? '😄 Joke' : '✨ Fun fact'}
 						</div>
-						<p class="text-xs text-base-content/80 leading-relaxed">
+						<p class="text-xs text-base-content/80 leading-relaxed line-clamp-4">
 							{funShowJoke ? (b.fun.joke ?? b.fun.fact) : (b.fun.fact ?? b.fun.joke)}
 						</p>
 					</button>
 				{/if}
 			</aside>
 
-			<!-- Right pane: tabs + content (independent scroll on lg) -->
-			<div class="order-1 lg:order-none flex flex-col lg:min-h-0">
+			<!-- Right pane: tabs + content (independent scroll on md+) -->
+			<div class="order-1 md:order-none md:flex-1 md:min-h-0 flex flex-col">
 				<!-- Tab strip -->
 				<nav class="shrink-0 flex gap-1 border-b border-base-content/10 -mx-1 px-1 overflow-x-auto">
 					{#each TAB_KEYS as key}
@@ -319,7 +326,7 @@
 				</nav>
 
 				<!-- Tab content -->
-				<div class="lg:flex-1 lg:overflow-y-auto lg:min-h-0 pt-4">
+				<div class="md:flex-1 md:overflow-y-auto md:min-h-0 pt-4">
 					{#if tab === 'summary'}
 						<div class="flex flex-col gap-4">
 							{#if b.greeting}

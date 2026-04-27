@@ -8,6 +8,7 @@
 		count?: number | null;
 		collapsible?: boolean;
 		defaultOpen?: boolean;
+		fillHeight?: boolean;
 		children: Snippet;
 		actions?: Snippet;
 	}
@@ -19,6 +20,7 @@
 		count = null,
 		collapsible = false,
 		defaultOpen = true,
+		fillHeight = false,
 		children,
 		actions
 	}: Props = $props();
@@ -28,8 +30,10 @@
 	let open = $state(defaultOpen);
 </script>
 
-<section class="rounded-xl bg-base-200/40 border border-base-content/5 overflow-hidden">
-	<header class="flex items-center gap-3 px-5 py-3 border-b border-base-content/5">
+<section
+	class="rounded-xl bg-base-200/40 border border-base-content/5 overflow-hidden flex flex-col {fillHeight ? 'h-full min-h-0' : ''}"
+>
+	<header class="shrink-0 flex items-center gap-3 px-5 py-3 border-b border-base-content/5">
 		{#if icon}<span class="text-lg leading-none">{icon}</span>{/if}
 		<div class="flex-1 min-w-0">
 			<h2 class="text-sm font-semibold text-base-content truncate">
@@ -56,7 +60,7 @@
 		{/if}
 	</header>
 	{#if open}
-		<div class="px-5 py-4">
+		<div class="px-5 py-4 {fillHeight ? 'flex-1 min-h-0 overflow-y-auto' : ''}">
 			{@render children()}
 		</div>
 	{/if}
