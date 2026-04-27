@@ -11,15 +11,27 @@
 	const dashboard = getDashboardStore();
 	const settings = getSettingsStore();
 
+	const TAB_KEYS = ['summary', 'calendar', 'email', 'slack', 'research'] as const;
+	type TabKey = (typeof TAB_KEYS)[number];
+
+	let tab = $state<TabKey>('summary');
 	let memoryOpen = $state(false);
 	let menuOpen = $state(false);
 	let funShowJoke = $state(false);
 	let now = $state(new Date());
 
 	onMount(() => {
+		const h = window.location.hash.slice(1);
+		if ((TAB_KEYS as readonly string[]).includes(h)) tab = h as TabKey;
 		const t = setInterval(() => (now = new Date()), 30_000);
 		void load();
 		return () => clearInterval(t);
+	});
+
+	$effect(() => {
+		if (typeof window !== 'undefined') {
+			history.replaceState(null, '', `#${tab}`);
+		}
 	});
 
 	async function load() {
@@ -46,26 +58,26 @@
 		const ageMs = now.getTime() - Date.parse(generatedAt);
 		if (Number.isNaN(ageMs)) return { label: '—', tone: 'stale' };
 		const mins = Math.max(0, Math.round(ageMs / 60000));
-		if (mins < 30) return { label: `${mins} min ago`, tone: 'fresh' };
+		if (mins < 30) return { label: `${mins}m`, tone: 'fresh' };
 		if (mins < 240) {
 			const h = Math.floor(mins / 60);
 			const m = mins % 60;
-			return { label: `${h}h ${m}m ago`, tone: 'aging' };
+			return { label: `${h}h ${m}m`, tone: 'aging' };
 		}
 		const h = Math.round(mins / 60);
-		return { label: `${h}h ago`, tone: 'stale' };
+		return { label: `${h}h`, tone: 'stale' };
 	}
 
 	function fmtMinutesAway(m: number | null): string {
 		if (m === null) return '';
 		if (m <= 0) return 'now';
-		if (m < 60) return `${m} min`;
+		if (m < 60) return `${m}m`;
 		const h = Math.floor(m / 60);
 		const mm = m % 60;
 		return mm === 0 ? `${h}h` : `${h}h ${mm}m`;
 	}
 
-	function eventClass(type: string, urgency: string): string {
+	function eventClass(type: string): string {
 		if (type === 'declined') return 'opacity-50 line-through';
 		if (type === 'personal_block' || type === 'personal') return 'opacity-70';
 		return '';
@@ -84,20 +96,76 @@
 	function priorityRank(p: string): number {
 		return p === 'critical' ? 0 : p === 'high' ? 1 : p === 'medium' ? 2 : 3;
 	}
+
+	const counts = $derived.by(() => {
+		const b = dashboard.briefing;
+		if (!b) return { calendar: 0, email: 0, slack: 0, research: 0, conflicts: 0, pending: 0 };
+		return {
+			calendar: b.calendar?.events.length ?? 0,
+			email: (b.email?.act_today.length ?? 0) + (b.email?.fyi.length ?? 0),
+			slack: b.slack?.channels.length ?? 0,
+			research: b.intelligence.reduce((n, c) => n + c.items.length, 0),
+			conflicts: b.calendar?.conflicts.length ?? 0,
+			pending: dashboard.questions.filter((q) => q.status === 'PENDING').length
+		};
+	});
 </script>
 
-<div class="max-w-6xl mx-auto px-4 py-6 flex flex-col gap-5">
-	<!-- Top bar -->
-	<header class="flex items-center gap-3">
+<div
+	class="max-w-7xl mx-auto px-4 lg:h-[calc(100dvh-6rem)] lg:flex lg:flex-col"
+>
+	<!-- Top strip -->
+	<header class="lg:shrink-0 flex items-center gap-3 py-3 border-b border-base-content/5">
 		<a href="/" class="btn btn-ghost btn-sm text-xs">← Back</a>
-		<h1 class="text-lg font-semibold text-base-content flex-1">Dashboard</h1>
+		<div class="flex-1 min-w-0">
+			<h1 class="text-base font-semibold text-base-content leading-tight">Dashboard</h1>
+			{#if dashboard.briefing}
+				<p class="text-[10px] text-base-content/50 font-mono">
+					{dashboard.briefing.meta.briefing_date} · {now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+				</p>
+			{/if}
+		</div>
+
+		{#if dashboard.briefing}
+			{@const b = dashboard.briefing}
+			{@const stale = staleness(b.meta.generated_at)}
+			{@const nextMins = liveMinutesAway(b.meta.next_meeting?.starts_at)}
+
+			{#if b.meta.next_meeting && nextMins !== null}
+				<div class="hidden md:flex items-center gap-1.5 text-xs text-base-content/70 max-w-xs">
+					<span class="opacity-60">next:</span>
+					<span class="font-medium text-base-content truncate">{b.meta.next_meeting.title}</span>
+					<span
+						class="font-mono"
+						class:text-error={nextMins <= 5 && nextMins > 0}
+						class:text-warning={nextMins > 5 && nextMins <= 15}
+					>
+						{fmtMinutesAway(nextMins)}
+					</span>
+				</div>
+			{/if}
+
+			<span
+				class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium font-mono"
+				class:bg-success={stale.tone === 'fresh'}
+				class:text-success-content={stale.tone === 'fresh'}
+				class:bg-warning={stale.tone === 'aging'}
+				class:text-warning-content={stale.tone === 'aging'}
+				class:bg-error={stale.tone === 'stale'}
+				class:text-error-content={stale.tone === 'stale'}
+				title="Time since briefing was generated"
+			>
+				{stale.label}
+			</span>
+		{/if}
+
 		<button
 			class="btn btn-primary btn-sm text-xs"
 			onclick={load}
 			disabled={dashboard.loading}
 			title="Re-read daily.json"
 		>
-			{dashboard.loading ? 'Loading…' : '↻ Refresh'}
+			{dashboard.loading ? '…' : '↻'}
 		</button>
 		<div class="relative">
 			<button
@@ -138,7 +206,7 @@
 	</header>
 
 	{#if dashboard.error}
-		<div class="rounded-xl bg-error/10 text-error border border-error/20 px-4 py-3 text-sm">
+		<div class="rounded-xl bg-error/10 text-error border border-error/20 px-4 py-3 text-sm my-3">
 			<div class="font-semibold mb-1">Could not load dashboard</div>
 			<div class="text-xs opacity-80 font-mono whitespace-pre-wrap">{dashboard.error}</div>
 			<div class="text-xs mt-2 opacity-70">
@@ -150,141 +218,16 @@
 
 	{#if dashboard.briefing}
 		{@const b = dashboard.briefing}
-		{@const stale = staleness(b.meta.generated_at)}
-		{@const nextMins = liveMinutesAway(b.meta.next_meeting?.starts_at)}
 
-		<!-- Hero -->
-		<section
-			class="rounded-2xl bg-gradient-to-br from-primary/10 via-base-200/40 to-secondary/10 border border-base-content/5 px-6 py-5 flex flex-col gap-3"
+		<!-- Two-pane body -->
+		<div
+			class="lg:flex-1 lg:min-h-0 grid grid-cols-1 lg:grid-cols-[20rem_1fr] gap-4 pt-3 pb-4"
 		>
-			<div class="flex items-start gap-3 flex-wrap">
-				<div class="flex-1 min-w-0">
-					<h2 class="text-xl font-semibold text-base-content">
-						{b.greeting?.text ?? `Today — ${b.meta.briefing_date}`}
-					</h2>
-					{#if b.meta.run_type}
-						<p class="text-[11px] uppercase tracking-wider text-base-content/50 mt-0.5">
-							{b.meta.run_type} · update #{b.meta.update_sequence ?? 1}
-						</p>
-					{/if}
-				</div>
-				<div class="flex flex-col items-end gap-1">
-					<span
-						class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium"
-						class:bg-success={stale.tone === 'fresh'}
-						class:text-success-content={stale.tone === 'fresh'}
-						class:bg-warning={stale.tone === 'aging'}
-						class:text-warning-content={stale.tone === 'aging'}
-						class:bg-error={stale.tone === 'stale'}
-						class:text-error-content={stale.tone === 'stale'}
-					>
-						{stale.label}
-					</span>
-					{#if dashboard.questions.length > 0}
-						{@const pending = dashboard.questions.filter((q) => q.status === 'PENDING').length}
-						{#if pending > 0}
-							<span class="text-[10px] text-base-content/60">
-								{pending} pending {pending === 1 ? 'question' : 'questions'}
-							</span>
-						{/if}
-					{/if}
-				</div>
-			</div>
-
-			{#if b.greeting?.context_note}
-				<div
-					class="rounded-lg bg-base-100/60 border border-base-content/10 px-4 py-2.5 text-sm text-base-content/80"
-				>
-					💡 {b.greeting.context_note}
-				</div>
-			{/if}
-
-			{#if b.meta.next_meeting && nextMins !== null}
-				<div class="flex items-center gap-2 text-xs text-base-content/70">
-					<span class="opacity-60">Next:</span>
-					<span class="font-medium text-base-content">{b.meta.next_meeting.title}</span>
-					<span class="opacity-60">in</span>
-					<span
-						class="font-mono"
-						class:text-error={nextMins <= 5 && nextMins > 0}
-						class:text-warning={nextMins > 5 && nextMins <= 15}
-					>
-						{fmtMinutesAway(nextMins)}
-					</span>
-					<span class="opacity-40">·</span>
-					<span class="opacity-60">{b.meta.next_meeting.starts_at.slice(11, 16)}</span>
-				</div>
-			{/if}
-		</section>
-
-		<!-- Focus prompt -->
-		{#if b.focus_prompt}
-			<section class="rounded-xl bg-primary/5 border-l-4 border-primary px-5 py-4">
-				<div class="text-[10px] uppercase tracking-wider text-primary/70 font-semibold mb-1.5">
-					Today's focus
-				</div>
-				<p class="text-sm text-base-content/80 leading-relaxed whitespace-pre-wrap">
-					{b.focus_prompt}
-				</p>
-			</section>
-		{/if}
-
-		<!-- Pending questions banner -->
-		{#if dashboard.questions.filter((q) => q.status === 'PENDING').length > 0}
-			<SectionCard
-				icon="❓"
-				title="Pending questions"
-				subtitle="The skill is asking — answer in question.md (inline editor lands in Phase 2)"
-				count={dashboard.questions.filter((q) => q.status === 'PENDING').length}
-				collapsible={true}
+			<!-- Left rail (independent scroll on lg) -->
+			<aside
+				class="order-2 lg:order-none flex flex-col gap-4 lg:overflow-y-auto lg:min-h-0 lg:pr-1"
 			>
-				<ul class="flex flex-col gap-2.5">
-					{#each dashboard.questions as q}
-						<li
-							class="rounded-lg border px-3.5 py-2.5"
-							class:border-warning={q.status === 'PENDING'}
-							class:bg-warning={q.status === 'PENDING'}
-							class:bg-opacity-5={q.status === 'PENDING'}
-							class:border-base-content={q.status !== 'PENDING'}
-							class:border-opacity-10={q.status !== 'PENDING'}
-						>
-							<div class="flex items-center gap-2 mb-1">
-								<span
-									class="text-[10px] font-mono uppercase tracking-wider"
-									class:text-warning={q.status === 'PENDING'}
-									class:text-success={q.status === 'ANSWERED'}
-									class:text-base-content={q.status === 'PROCESSED'}
-									class:opacity-50={q.status === 'PROCESSED'}
-								>
-									[{q.status}]
-								</span>
-								<h4 class="text-sm font-medium text-base-content">{q.title}</h4>
-							</div>
-							{#if q.context}
-								<p class="text-xs text-base-content/60 mb-1">{q.context}</p>
-							{/if}
-							{#if q.body}
-								<p class="text-xs text-base-content/70 whitespace-pre-wrap">{q.body}</p>
-							{/if}
-							{#if q.answer}
-								<div class="mt-2 rounded bg-base-300/40 px-2.5 py-1.5 text-xs text-base-content/80">
-									{q.answer}
-								</div>
-							{/if}
-						</li>
-					{/each}
-				</ul>
-			</SectionCard>
-		{/if}
-
-		<div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-			<!-- Action items rail -->
-			<div class="lg:col-span-1 flex flex-col gap-5">
-				<SectionCard
-					icon="⚡"
-					title="Action items"
-					count={b.action_items.length}
-				>
+				<SectionCard icon="⚡" title="Action items" count={b.action_items.length}>
 					{#if b.action_items.length === 0}
 						<p class="text-xs text-base-content/40">Nothing queued.</p>
 					{:else}
@@ -294,9 +237,7 @@
 								<li class="rounded-lg bg-base-100/40 border border-base-content/5 px-3 py-2.5 flex flex-col gap-1.5">
 									<div class="flex items-start gap-2">
 										<UrgencyDot urgency={a.priority} size="md" />
-										<p class="flex-1 text-xs text-base-content/85 leading-snug">
-											{a.text}
-										</p>
+										<p class="flex-1 text-xs text-base-content/85 leading-snug">{a.text}</p>
 									</div>
 									<div class="flex items-center gap-1.5 flex-wrap text-[10px] text-base-content/50">
 										{#if a.deadline}<span class="font-mono">⏰ {a.deadline}</span>{/if}
@@ -310,7 +251,6 @@
 					{/if}
 				</SectionCard>
 
-				<!-- Meeting preps -->
 				{#if b.meeting_preps.length > 0}
 					<SectionCard icon="📝" title="Meeting preps" count={b.meeting_preps.length}>
 						<ul class="flex flex-col gap-1.5">
@@ -321,13 +261,7 @@
 									<span class="flex-1 truncate text-base-content/80" title={p.title}>{p.title}</span>
 									<DealPill {deal} fallbackId={p.deal_tag} />
 									{#if p.file}
-										<a
-											href="/briefings"
-											class="text-[11px] text-primary hover:underline"
-											title="Open in Briefings viewer"
-										>
-											open
-										</a>
+										<a href="/briefings" class="text-[11px] text-primary hover:underline" title="Open in Briefings viewer">open</a>
 									{/if}
 								</li>
 							{/each}
@@ -335,7 +269,6 @@
 					</SectionCard>
 				{/if}
 
-				<!-- Fun -->
 				{#if b.fun && (b.fun.fact || b.fun.joke)}
 					<button
 						class="rounded-xl bg-gradient-to-br from-secondary/10 via-accent/5 to-primary/10 border border-base-content/5 p-4 text-left hover:scale-[1.01] transition-transform"
@@ -350,265 +283,318 @@
 						</p>
 					</button>
 				{/if}
-			</div>
+			</aside>
 
-			<!-- Main column -->
-			<div class="lg:col-span-2 flex flex-col gap-5">
-				<!-- Calendar -->
-				{#if b.calendar}
-					<SectionCard
-						icon="📅"
-						title="Today's calendar"
-						subtitle={b.calendar.summary}
-						count={b.calendar.events.length}
-					>
-						{#if b.calendar.conflicts.length > 0}
-							<div class="mb-3 flex flex-col gap-2">
-								{#each b.calendar.conflicts as c}
-									<div class="rounded-lg bg-warning/10 border border-warning/20 px-3 py-2.5">
-										<div class="flex items-center gap-2 text-xs font-medium text-warning mb-1">
-											⚠️ Conflict at {c.time}
-										</div>
-										<p class="text-xs text-base-content/80">{c.description}</p>
-										{#if c.action_needed}
-											<p class="text-xs font-semibold text-base-content/90 mt-1.5">
-												→ {c.action_needed}
-											</p>
-										{/if}
-									</div>
-								{/each}
-							</div>
-						{/if}
-
-						<ul class="flex flex-col gap-1">
-							{#each b.calendar.events as e}
-								{@const deal = dashboard.dealById(e.deal_tag)}
-								<li
-									class="flex items-stretch gap-3 rounded-lg border-l-2 {eventBorder(e.type, e.urgency)} bg-base-100/30 px-3 py-2 text-xs {eventClass(e.type, e.urgency)}"
-								>
-									<div class="font-mono text-base-content/60 w-24 shrink-0 pt-0.5">
-										{e.start}–{e.end}
-									</div>
-									<div class="flex-1 min-w-0 flex flex-col gap-0.5">
-										<div class="flex items-center gap-1.5 flex-wrap">
-											<UrgencyDot urgency={e.urgency} />
-											<span class="font-medium text-base-content/90 truncate">{e.title}</span>
-											<DealPill {deal} fallbackId={e.deal_tag} />
-											{#if e.initiative}
-												<span class="text-[10px] text-base-content/50">· {e.initiative}</span>
-											{/if}
-										</div>
-										{#if e.notes}
-											<p class="text-[11px] text-base-content/55 leading-snug">{e.notes}</p>
-										{/if}
-										{#if e.participants.length > 0}
-											<p class="text-[10px] text-base-content/40 truncate">
-												{e.participants.join(', ')}
-											</p>
-										{/if}
-									</div>
-									<div class="flex items-center gap-1 shrink-0">
-										{#if e.links?.zoom}<ExternalLink href={e.links.zoom} icon="📹" title="Zoom" />{/if}
-										{#if e.links?.doc}<ExternalLink href={e.links.doc} icon="📄" title="Doc" />{/if}
-										{#if e.links?.other}<ExternalLink href={e.links.other} icon="🔗" title="Link" />{/if}
-									</div>
-								</li>
-							{/each}
-						</ul>
-					</SectionCard>
-				{/if}
-
-				<!-- Email -->
-				{#if b.email}
-					<SectionCard
-						icon="✉️"
-						title="Email"
-						subtitle={b.email.no_action_summary}
-						count={b.email.act_today.length + b.email.fyi.length}
-					>
-						{#if b.email.act_today.length > 0}
-							<div class="mb-3">
-								<div class="text-[10px] uppercase tracking-wider text-base-content/50 font-semibold mb-2">
-									Act today
-								</div>
-								<ul class="flex flex-col gap-2">
-									{#each b.email.act_today as m}
-										{@const deal = dashboard.dealById(m.deal_tag)}
-										<li class="rounded-lg border-l-4 border-error/60 bg-base-100/40 px-3 py-2.5">
-											<div class="flex items-center gap-2 mb-1 flex-wrap">
-												<UrgencyDot urgency={m.urgency} />
-												<span class="text-xs font-medium text-base-content">{m.from}</span>
-												<DealPill {deal} fallbackId={m.deal_tag} />
-												{#if m.url}<ExternalLink href={m.url} label="gmail" />{/if}
-											</div>
-											<p class="text-xs text-base-content/85 mb-0.5">{m.subject}</p>
-											<p class="text-[11px] text-base-content/65 leading-snug">{m.summary}</p>
-											{#if m.action}
-												<p class="text-[11px] text-base-content/85 font-medium mt-1">
-													→ {m.action}
-												</p>
-											{/if}
-										</li>
-									{/each}
-								</ul>
-							</div>
-						{/if}
-
-						{#if b.email.fyi.length > 0}
-							<div>
-								<div class="text-[10px] uppercase tracking-wider text-base-content/50 font-semibold mb-2">
-									FYI
-								</div>
-								<ul class="flex flex-col gap-1.5">
-									{#each b.email.fyi as m}
-										{@const deal = dashboard.dealById(m.deal_tag)}
-										<li class="rounded-lg border border-base-content/10 bg-base-100/20 px-3 py-2 text-xs">
-											<div class="flex items-center gap-2 mb-0.5 flex-wrap">
-												<UrgencyDot urgency={m.urgency} />
-												<span class="font-medium text-base-content/80">{m.from}</span>
-												<span class="text-base-content/50">— {m.subject}</span>
-												<DealPill {deal} fallbackId={m.deal_tag} />
-												{#if m.url}<ExternalLink href={m.url} label="gmail" />{/if}
-											</div>
-											<p class="text-[11px] text-base-content/60 leading-snug">{m.summary}</p>
-											{#if m.context}
-												<p class="text-[11px] text-base-content/50 italic mt-0.5">{m.context}</p>
-											{/if}
-										</li>
-									{/each}
-								</ul>
-							</div>
-						{/if}
-					</SectionCard>
-				{/if}
-
-				<!-- Slack -->
-				{#if b.slack && (b.slack.channels.length > 0 || b.slack.dms.length > 0)}
-					<SectionCard
-						icon="💬"
-						title="Slack"
-						subtitle={b.slack.since ? `Since ${b.slack.since}` : null}
-						count={b.slack.channels.length}
-					>
-						<ul class="flex flex-col gap-3">
-							{#each b.slack.channels as ch}
-								{@const deal = dashboard.dealById(ch.deal_tag)}
-								<li class="rounded-lg bg-base-100/30 border border-base-content/5 p-3">
-									<div class="flex items-center gap-2 mb-2 flex-wrap">
-										<span class="text-xs font-mono font-medium text-base-content/85">
-											{ch.channel_name}
-										</span>
-										<DealPill {deal} fallbackId={ch.deal_tag} />
-										<span
-											class="text-[10px] uppercase tracking-wider rounded-full px-1.5 py-0.5"
-											class:bg-success={ch.activity_level === 'high'}
-											class:bg-warning={ch.activity_level === 'medium'}
-											class:bg-base-300={ch.activity_level === 'low' || ch.activity_level === 'quiet'}
-											class:text-success-content={ch.activity_level === 'high'}
-											class:text-warning-content={ch.activity_level === 'medium'}
-										>
-											{ch.activity_level}
-										</span>
-										{#if ch.url}<ExternalLink href={ch.url} label="open" />{/if}
-									</div>
-									{#if ch.messages.length === 0}
-										<p class="text-[11px] text-base-content/40">No messages.</p>
-									{:else}
-										<ul class="flex flex-col gap-1.5">
-											{#each ch.messages as msg}
-												<li class="text-[11px] border-l border-base-content/10 pl-2.5">
-													<div class="flex items-center gap-1.5 mb-0.5">
-														{#if msg.author}
-															<span class="font-medium text-base-content/80">{msg.author}</span>
-														{/if}
-														{#if msg.timestamp}
-															<span class="text-base-content/40 text-[10px]">{msg.timestamp.slice(11, 16)}</span>
-														{/if}
-													</div>
-													<p class="text-base-content/65 leading-snug">{msg.summary}</p>
-													{#if msg.links.length > 0}
-														<div class="flex flex-wrap gap-1 mt-1">
-															{#each msg.links as l}
-																<ExternalLink href={l.url} label={l.label} />
-															{/each}
-														</div>
-													{/if}
-													{#if msg.action}
-														<p class="text-base-content/85 font-medium mt-0.5">→ {msg.action}</p>
-													{/if}
-												</li>
-											{/each}
-										</ul>
-									{/if}
-								</li>
-							{/each}
-						</ul>
-						{#if b.slack.dms.length > 0}
-							<div class="mt-3">
-								<div class="text-[10px] uppercase tracking-wider text-base-content/50 font-semibold mb-2">
-									DMs
-								</div>
-								<ul class="flex flex-col gap-1.5">
-									{#each b.slack.dms as dm}
-										<li class="rounded-lg bg-base-100/30 px-3 py-2 text-xs">
-											<div class="flex items-center gap-2 mb-0.5">
-												<span class="font-medium text-base-content/80">{dm.with}</span>
-												{#if dm.url}<ExternalLink href={dm.url} label="open" />{/if}
-											</div>
-											<p class="text-[11px] text-base-content/60">{dm.summary}</p>
-											{#if dm.action}
-												<p class="text-[11px] text-base-content/85 font-medium mt-0.5">→ {dm.action}</p>
-											{/if}
-										</li>
-									{/each}
-								</ul>
-							</div>
-						{/if}
-					</SectionCard>
-				{/if}
-
-				<!-- Intelligence -->
-				{#if b.intelligence.length > 0}
-					{#each b.intelligence as cat}
-						{@const def = dashboard.categoryById(cat.category_id)}
-						<SectionCard
-							icon={def?.icon ?? '📰'}
-							title={def?.label ?? cat.category_id}
-							count={cat.items.length}
-							collapsible={true}
-							defaultOpen={cat.items.length <= 3}
+			<!-- Right pane: tabs + content (independent scroll on lg) -->
+			<div class="order-1 lg:order-none flex flex-col lg:min-h-0">
+				<!-- Tab strip -->
+				<nav class="shrink-0 flex gap-1 border-b border-base-content/10 -mx-1 px-1 overflow-x-auto">
+					{#each TAB_KEYS as key}
+						{@const active = tab === key}
+						{@const count = key === 'summary' ? null : counts[key]}
+						<button
+							class="shrink-0 px-3 py-2 text-xs font-medium border-b-2 -mb-px transition-colors flex items-center gap-1.5 capitalize"
+							class:border-primary={active}
+							class:text-primary={active}
+							class:border-transparent={!active}
+							class:text-base-content={!active}
+							class:opacity-60={!active}
+							onclick={() => (tab = key)}
 						>
-							<ul class="flex flex-col gap-2">
-								{#each cat.items as it}
-									<li class="rounded-lg bg-base-100/30 px-3 py-2.5">
-										<div class="flex items-start gap-2 mb-1 flex-wrap">
-											<h4 class="text-xs font-semibold text-base-content/90 flex-1 min-w-0">
-												{it.headline}
-											</h4>
-											{#if it.url}<ExternalLink href={it.url} label={it.source ?? 'source'} />{/if}
+							<span>{key}</span>
+							{#if count !== null && count !== undefined && count > 0}
+								<span
+									class="rounded-full bg-base-300/60 px-1.5 py-0.5 text-[10px] font-mono"
+									class:bg-primary={active}
+									class:text-primary-content={active}
+								>
+									{count}
+								</span>
+							{/if}
+							{#if key === 'calendar' && counts.conflicts > 0}
+								<span class="text-warning" title="{counts.conflicts} conflict{counts.conflicts > 1 ? 's' : ''}">⚠</span>
+							{/if}
+						</button>
+					{/each}
+				</nav>
+
+				<!-- Tab content -->
+				<div class="lg:flex-1 lg:overflow-y-auto lg:min-h-0 pt-4">
+					{#if tab === 'summary'}
+						<div class="flex flex-col gap-4">
+							{#if b.greeting}
+								<section class="rounded-xl bg-gradient-to-br from-primary/10 via-base-200/40 to-secondary/10 border border-base-content/5 px-5 py-4">
+									<h2 class="text-lg font-semibold text-base-content">{b.greeting.text}</h2>
+									{#if b.greeting.context_note}
+										<div class="mt-2 rounded-lg bg-base-100/60 border border-base-content/10 px-3.5 py-2 text-sm text-base-content/80">
+											💡 {b.greeting.context_note}
 										</div>
-										<p class="text-[11px] text-base-content/65 leading-snug">{it.detail}</p>
-										{#if it.relevance}
-											<p class="text-[11px] text-primary/80 italic mt-1.5">↳ {it.relevance}</p>
+									{/if}
+								</section>
+							{/if}
+
+							{#if b.focus_prompt}
+								<section class="rounded-xl bg-primary/5 border-l-4 border-primary px-5 py-4">
+									<div class="text-[10px] uppercase tracking-wider text-primary/70 font-semibold mb-1.5">Today's focus</div>
+									<p class="text-sm text-base-content/80 leading-relaxed whitespace-pre-wrap">{b.focus_prompt}</p>
+								</section>
+							{/if}
+
+							{#if dashboard.questions.length > 0}
+								<SectionCard
+									icon="❓"
+									title="Pending questions"
+									subtitle={counts.pending > 0 ? 'Skill is asking — answer in question.md' : 'All answered'}
+									count={dashboard.questions.length}
+									collapsible={true}
+									defaultOpen={false}
+								>
+									<ul class="flex flex-col gap-2">
+										{#each dashboard.questions as q}
+											<li
+												class="rounded-lg border px-3 py-2"
+												class:border-warning={q.status === 'PENDING'}
+												class:bg-warning={q.status === 'PENDING'}
+												class:bg-opacity-5={q.status === 'PENDING'}
+												class:border-base-content={q.status !== 'PENDING'}
+												class:border-opacity-10={q.status !== 'PENDING'}
+											>
+												<div class="flex items-center gap-2 mb-1">
+													<span
+														class="text-[10px] font-mono uppercase tracking-wider"
+														class:text-warning={q.status === 'PENDING'}
+														class:text-success={q.status === 'ANSWERED'}
+														class:opacity-50={q.status === 'PROCESSED'}
+													>
+														[{q.status}]
+													</span>
+													<h4 class="text-sm font-medium text-base-content">{q.title}</h4>
+												</div>
+												{#if q.context}
+													<p class="text-xs text-base-content/60 mb-1">{q.context}</p>
+												{/if}
+												{#if q.body}
+													<p class="text-xs text-base-content/70 whitespace-pre-wrap">{q.body}</p>
+												{/if}
+												{#if q.answer}
+													<div class="mt-2 rounded bg-base-300/40 px-2.5 py-1.5 text-xs text-base-content/80">{q.answer}</div>
+												{/if}
+											</li>
+										{/each}
+									</ul>
+								</SectionCard>
+							{/if}
+
+							<footer class="text-[10px] text-base-content/40 pt-2">
+								Generated {b.meta.generated_at} · timezone {b.meta.timezone ?? '?'}
+								· run {b.meta.run_type ?? '?'} #{b.meta.update_sequence ?? 1}
+								{#if dashboard.lastLoaded}· loaded {dashboard.lastLoaded.toLocaleTimeString()}{/if}
+							</footer>
+						</div>
+
+					{:else if tab === 'calendar' && b.calendar}
+						<div class="flex flex-col gap-3">
+							{#if b.calendar.summary}
+								<p class="text-xs text-base-content/60 italic">{b.calendar.summary}</p>
+							{/if}
+							{#if b.calendar.conflicts.length > 0}
+								<div class="flex flex-col gap-2">
+									{#each b.calendar.conflicts as c}
+										<div class="rounded-lg bg-warning/10 border border-warning/20 px-3 py-2.5">
+											<div class="flex items-center gap-2 text-xs font-medium text-warning mb-1">⚠️ Conflict at {c.time}</div>
+											<p class="text-xs text-base-content/80">{c.description}</p>
+											{#if c.action_needed}
+												<p class="text-xs font-semibold text-base-content/90 mt-1.5">→ {c.action_needed}</p>
+											{/if}
+										</div>
+									{/each}
+								</div>
+							{/if}
+							<ul class="flex flex-col gap-1">
+								{#each b.calendar.events as e}
+									{@const deal = dashboard.dealById(e.deal_tag)}
+									<li
+										class="flex items-stretch gap-3 rounded-lg border-l-2 {eventBorder(e.type, e.urgency)} bg-base-100/30 px-3 py-2 text-xs {eventClass(e.type)}"
+									>
+										<div class="font-mono text-base-content/60 w-24 shrink-0 pt-0.5">{e.start}–{e.end}</div>
+										<div class="flex-1 min-w-0 flex flex-col gap-0.5">
+											<div class="flex items-center gap-1.5 flex-wrap">
+												<UrgencyDot urgency={e.urgency} />
+												<span class="font-medium text-base-content/90 truncate">{e.title}</span>
+												<DealPill {deal} fallbackId={e.deal_tag} />
+												{#if e.initiative}<span class="text-[10px] text-base-content/50">· {e.initiative}</span>{/if}
+											</div>
+											{#if e.notes}<p class="text-[11px] text-base-content/55 leading-snug">{e.notes}</p>{/if}
+											{#if e.participants.length > 0}
+												<p class="text-[10px] text-base-content/40 truncate">{e.participants.join(', ')}</p>
+											{/if}
+										</div>
+										<div class="flex items-center gap-1 shrink-0">
+											{#if e.links?.zoom}<ExternalLink href={e.links.zoom} icon="📹" title="Zoom" />{/if}
+											{#if e.links?.doc}<ExternalLink href={e.links.doc} icon="📄" title="Doc" />{/if}
+											{#if e.links?.other}<ExternalLink href={e.links.other} icon="🔗" title="Link" />{/if}
+										</div>
+									</li>
+								{/each}
+							</ul>
+						</div>
+
+					{:else if tab === 'email' && b.email}
+						<div class="flex flex-col gap-4">
+							{#if b.email.act_today.length > 0}
+								<div>
+									<div class="text-[10px] uppercase tracking-wider text-base-content/50 font-semibold mb-2">Act today</div>
+									<ul class="flex flex-col gap-2">
+										{#each b.email.act_today as m}
+											{@const deal = dashboard.dealById(m.deal_tag)}
+											<li class="rounded-lg border-l-4 border-error/60 bg-base-100/40 px-3 py-2.5">
+												<div class="flex items-center gap-2 mb-1 flex-wrap">
+													<UrgencyDot urgency={m.urgency} />
+													<span class="text-xs font-medium text-base-content">{m.from}</span>
+													<DealPill {deal} fallbackId={m.deal_tag} />
+													{#if m.url}<ExternalLink href={m.url} label="gmail" />{/if}
+												</div>
+												<p class="text-xs text-base-content/85 mb-0.5">{m.subject}</p>
+												<p class="text-[11px] text-base-content/65 leading-snug">{m.summary}</p>
+												{#if m.action}<p class="text-[11px] text-base-content/85 font-medium mt-1">→ {m.action}</p>{/if}
+											</li>
+										{/each}
+									</ul>
+								</div>
+							{/if}
+							{#if b.email.fyi.length > 0}
+								<div>
+									<div class="text-[10px] uppercase tracking-wider text-base-content/50 font-semibold mb-2">FYI</div>
+									<ul class="flex flex-col gap-1.5">
+										{#each b.email.fyi as m}
+											{@const deal = dashboard.dealById(m.deal_tag)}
+											<li class="rounded-lg border border-base-content/10 bg-base-100/20 px-3 py-2 text-xs">
+												<div class="flex items-center gap-2 mb-0.5 flex-wrap">
+													<UrgencyDot urgency={m.urgency} />
+													<span class="font-medium text-base-content/80">{m.from}</span>
+													<span class="text-base-content/50">— {m.subject}</span>
+													<DealPill {deal} fallbackId={m.deal_tag} />
+													{#if m.url}<ExternalLink href={m.url} label="gmail" />{/if}
+												</div>
+												<p class="text-[11px] text-base-content/60 leading-snug">{m.summary}</p>
+												{#if m.context}<p class="text-[11px] text-base-content/50 italic mt-0.5">{m.context}</p>{/if}
+											</li>
+										{/each}
+									</ul>
+								</div>
+							{/if}
+							{#if b.email.no_action_summary}
+								<p class="text-[10px] text-base-content/40 italic border-t border-base-content/5 pt-2">
+									{b.email.no_action_summary}
+								</p>
+							{/if}
+						</div>
+
+					{:else if tab === 'slack' && b.slack}
+						<div class="flex flex-col gap-3">
+							{#if b.slack.since}
+								<p class="text-[10px] text-base-content/50">Since {b.slack.since}</p>
+							{/if}
+							<ul class="flex flex-col gap-3">
+								{#each b.slack.channels as ch}
+									{@const deal = dashboard.dealById(ch.deal_tag)}
+									<li class="rounded-lg bg-base-100/30 border border-base-content/5 p-3">
+										<div class="flex items-center gap-2 mb-2 flex-wrap">
+											<span class="text-xs font-mono font-medium text-base-content/85">{ch.channel_name}</span>
+											<DealPill {deal} fallbackId={ch.deal_tag} />
+											<span
+												class="text-[10px] uppercase tracking-wider rounded-full px-1.5 py-0.5"
+												class:bg-success={ch.activity_level === 'high'}
+												class:bg-warning={ch.activity_level === 'medium'}
+												class:bg-base-300={ch.activity_level === 'low' || ch.activity_level === 'quiet'}
+												class:text-success-content={ch.activity_level === 'high'}
+												class:text-warning-content={ch.activity_level === 'medium'}
+											>
+												{ch.activity_level}
+											</span>
+											{#if ch.url}<ExternalLink href={ch.url} label="open" />{/if}
+										</div>
+										{#if ch.messages.length === 0}
+											<p class="text-[11px] text-base-content/40">No messages.</p>
+										{:else}
+											<ul class="flex flex-col gap-1.5">
+												{#each ch.messages as msg}
+													<li class="text-[11px] border-l border-base-content/10 pl-2.5">
+														<div class="flex items-center gap-1.5 mb-0.5">
+															{#if msg.author}<span class="font-medium text-base-content/80">{msg.author}</span>{/if}
+															{#if msg.timestamp}<span class="text-base-content/40 text-[10px]">{msg.timestamp.slice(11, 16)}</span>{/if}
+														</div>
+														<p class="text-base-content/65 leading-snug">{msg.summary}</p>
+														{#if msg.links.length > 0}
+															<div class="flex flex-wrap gap-1 mt-1">
+																{#each msg.links as l}<ExternalLink href={l.url} label={l.label} />{/each}
+															</div>
+														{/if}
+														{#if msg.action}<p class="text-base-content/85 font-medium mt-0.5">→ {msg.action}</p>{/if}
+													</li>
+												{/each}
+											</ul>
 										{/if}
 									</li>
 								{/each}
 							</ul>
-						</SectionCard>
-					{/each}
-				{/if}
+							{#if b.slack.dms.length > 0}
+								<div>
+									<div class="text-[10px] uppercase tracking-wider text-base-content/50 font-semibold mb-2">DMs</div>
+									<ul class="flex flex-col gap-1.5">
+										{#each b.slack.dms as dm}
+											<li class="rounded-lg bg-base-100/30 px-3 py-2 text-xs">
+												<div class="flex items-center gap-2 mb-0.5">
+													<span class="font-medium text-base-content/80">{dm.with}</span>
+													{#if dm.url}<ExternalLink href={dm.url} label="open" />{/if}
+												</div>
+												<p class="text-[11px] text-base-content/60">{dm.summary}</p>
+												{#if dm.action}<p class="text-[11px] text-base-content/85 font-medium mt-0.5">→ {dm.action}</p>{/if}
+											</li>
+										{/each}
+									</ul>
+								</div>
+							{/if}
+						</div>
+
+					{:else if tab === 'research'}
+						<div class="flex flex-col gap-3">
+							{#each b.intelligence as cat}
+								{@const def = dashboard.categoryById(cat.category_id)}
+								<SectionCard
+									icon={def?.icon ?? '📰'}
+									title={def?.label ?? cat.category_id}
+									count={cat.items.length}
+									collapsible={true}
+									defaultOpen={cat.items.length <= 3}
+								>
+									<ul class="flex flex-col gap-2">
+										{#each cat.items as it}
+											<li class="rounded-lg bg-base-100/30 px-3 py-2.5">
+												<div class="flex items-start gap-2 mb-1 flex-wrap">
+													<h4 class="text-xs font-semibold text-base-content/90 flex-1 min-w-0">{it.headline}</h4>
+													{#if it.url}<ExternalLink href={it.url} label={it.source ?? 'source'} />{/if}
+												</div>
+												<p class="text-[11px] text-base-content/65 leading-snug">{it.detail}</p>
+												{#if it.relevance}<p class="text-[11px] text-primary/80 italic mt-1.5">↳ {it.relevance}</p>{/if}
+											</li>
+										{/each}
+									</ul>
+								</SectionCard>
+							{/each}
+							{#if b.intelligence.length === 0}
+								<p class="text-xs text-base-content/40">No intelligence items today.</p>
+							{/if}
+						</div>
+					{:else}
+						<p class="text-xs text-base-content/40">Nothing to show.</p>
+					{/if}
+				</div>
 			</div>
 		</div>
-
-		<footer class="text-[10px] text-base-content/40 text-center py-2">
-			Generated {b.meta.generated_at} · timezone {b.meta.timezone ?? '?'}
-			{#if dashboard.lastLoaded}
-				· loaded {dashboard.lastLoaded.toLocaleTimeString()}
-			{/if}
-		</footer>
 	{:else if !dashboard.error && !dashboard.loading}
-		<div class="rounded-xl bg-base-200/40 border border-base-content/5 px-6 py-10 text-center">
-			<p class="text-sm text-base-content/60">No daily.json yet — run the briefing skill, then click Refresh.</p>
+		<div class="rounded-xl bg-base-200/40 border border-base-content/5 px-6 py-10 text-center mt-3">
+			<p class="text-sm text-base-content/60">No daily.json yet — run the briefing skill, then click ↻.</p>
 		</div>
 	{:else if dashboard.loading}
 		<div class="flex justify-center py-12">
