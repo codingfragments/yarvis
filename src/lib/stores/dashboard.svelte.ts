@@ -14,6 +14,7 @@ let questions = $state<DashboardQuestion[]>([]);
 let memory = $state<string | null>(null);
 let lastLoaded = $state<Date | null>(null);
 let loading = $state(false);
+let submittingAnswer = $state(false);
 let error = $state<string | null>(null);
 
 export function getDashboardStore() {
@@ -24,6 +25,7 @@ export function getDashboardStore() {
 		get memory() { return memory; },
 		get lastLoaded() { return lastLoaded; },
 		get loading() { return loading; },
+		get submittingAnswer() { return submittingAnswer; },
 		get error() { return error; },
 
 		dealById(id: string | null | undefined): ActiveDealDef | null {
@@ -69,6 +71,19 @@ export function getDashboardStore() {
 			} catch (e) {
 				memory = null;
 				error = String(e);
+			}
+		},
+
+		async answerQuestion(dailyDir: string, title: string, answer: string) {
+			if (!isTauri()) {
+				throw new Error('Answering questions requires Tauri runtime.');
+			}
+			submittingAnswer = true;
+			try {
+				await dashboardService.answerQuestion(dailyDir, title, answer);
+				questions = await dashboardService.readQuestions(dailyDir);
+			} finally {
+				submittingAnswer = false;
 			}
 		}
 	};

@@ -33,3 +33,11 @@ export async function getDailyStatus(dailyDir: string): Promise<DailyStatus> {
 export async function readQuestions(dailyDir: string): Promise<DashboardQuestion[]> {
 	return invoke<DashboardQuestion[]>('read_questions', { dailyDir });
 }
+
+export async function answerQuestion(
+	dailyDir: string,
+	title: string,
+	answer: string
+): Promise<void> {
+	return invoke<void>('answer_question', { dailyDir, title, answer });
+}
