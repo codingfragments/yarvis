@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { tick } from 'svelte';
+	import { onDestroy, tick } from 'svelte';
 	import MarkdownRenderer from '$lib/components/MarkdownRenderer.svelte';
 
 	interface Props {
@@ -24,30 +24,50 @@
 		onClose
 	}: Props = $props();
 
+	const MIN_QUERY_LENGTH = 2;
+	const DEBOUNCE_MS = 200;
+
 	let bodyEl: HTMLDivElement | undefined = $state();
 	let searchInputEl: HTMLInputElement | undefined = $state();
 	let navOpen = $state(false);
 	let searchOpen = $state(false);
 	let query = $state('');
+	let effectiveQuery = $state('');
 	let matches: HTMLElement[] = $state([]);
 	let currentIdx = $state(0);
+	let searching = $state(false);
 	let headings = $state<Array<{ id: string; text: string; level: number }>>([]);
 
-	// Re-extract outline + clear search when the document changes
+	// Cached text-node index, rebuilt only when the document is (re)rendered.
+	// Each entry's `node` is the text node currently in the DOM. When marks are
+	// applied, the entry is split into multiple new text nodes — so we reset
+	// the cache at the start of every search and rebuild after clearing marks.
+	let textIndex: Array<{ node: Text; lower: string }> = [];
+
+	let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+	let rafHandle: number | undefined;
+
+	onDestroy(() => {
+		if (debounceTimer) clearTimeout(debounceTimer);
+		if (rafHandle !== undefined) cancelAnimationFrame(rafHandle);
+	});
+
+	// Build the outline + text-node index whenever the document content is
+	// (re)rendered into the body element.
 	$effect(() => {
 		content;
 		open;
-		queueMicrotask(() => {
+		// Wait for MarkdownRenderer's wireInteractions() to assign heading ids.
+		requestAnimationFrame(() => {
 			if (!bodyEl || !open) return;
-			requestAnimationFrame(() => {
-				if (!bodyEl) return;
-				headings = Array.from(bodyEl.querySelectorAll('h1, h2, h3')).map((h) => ({
-					id: h.id,
-					text: h.textContent?.trim() ?? '',
-					level: parseInt(h.tagName.slice(1), 10)
-				}));
-				if (query) applyHighlight();
-			});
+			headings = Array.from(bodyEl.querySelectorAll('h1, h2, h3')).map((h) => ({
+				id: h.id,
+				text: h.textContent?.trim() ?? '',
+				level: parseInt(h.tagName.slice(1), 10)
+			}));
+			rebuildTextIndex();
+			// Reapply highlight to the freshly rendered content
+			if (effectiveQuery) scheduleHighlight();
 		});
 	});
 
@@ -56,16 +76,67 @@
 		if (!open) {
 			searchOpen = false;
 			query = '';
+			effectiveQuery = '';
 			matches = [];
 			currentIdx = 0;
+			searching = false;
+			textIndex = [];
 		}
 	});
 
+	// Debounce typed query into effectiveQuery.
 	$effect(() => {
-		// Re-run highlight when query changes
-		query;
-		if (open && bodyEl) applyHighlight();
+		const raw = query.trim();
+		if (debounceTimer) clearTimeout(debounceTimer);
+
+		if (raw.length < MIN_QUERY_LENGTH) {
+			searching = false;
+			if (effectiveQuery !== '') effectiveQuery = '';
+			return;
+		}
+
+		searching = true;
+		debounceTimer = setTimeout(() => {
+			effectiveQuery = raw;
+			searching = false;
+		}, DEBOUNCE_MS);
 	});
+
+	// Run the highlight when the *debounced* term changes.
+	$effect(() => {
+		effectiveQuery;
+		if (open && bodyEl) scheduleHighlight();
+	});
+
+	function scheduleHighlight() {
+		if (rafHandle !== undefined) cancelAnimationFrame(rafHandle);
+		rafHandle = requestAnimationFrame(() => {
+			rafHandle = undefined;
+			applyHighlight();
+		});
+	}
+
+	function rebuildTextIndex() {
+		textIndex = [];
+		if (!bodyEl) return;
+		const walker = document.createTreeWalker(bodyEl, NodeFilter.SHOW_TEXT, {
+			acceptNode(node) {
+				let p = node.parentElement;
+				while (p && p !== bodyEl) {
+					if (p.tagName === 'PRE' || p.tagName === 'CODE') return NodeFilter.FILTER_REJECT;
+					p = p.parentElement;
+				}
+				return (node.nodeValue ?? '').length > 0
+					? NodeFilter.FILTER_ACCEPT
+					: NodeFilter.FILTER_REJECT;
+			}
+		});
+		let n: Node | null;
+		while ((n = walker.nextNode())) {
+			const t = n as Text;
+			textIndex.push({ node: t, lower: (t.nodeValue ?? '').toLowerCase() });
+		}
+	}
 
 	function clearMarks() {
 		if (!bodyEl) return;
@@ -83,32 +154,19 @@
 		clearMarks();
 		matches = [];
 		currentIdx = 0;
-		const q = query.trim();
-		if (!q) return;
+		const q = effectiveQuery.trim();
+		if (q.length < MIN_QUERY_LENGTH) return;
 
+		// `clearMarks()` may have re-merged text nodes via .normalize(); rebuild
+		// the index so we work on live nodes.
+		rebuildTextIndex();
 		const lowerQ = q.toLowerCase();
-		const walker = document.createTreeWalker(bodyEl, NodeFilter.SHOW_TEXT, {
-			acceptNode(node) {
-				let p = node.parentElement;
-				while (p && p !== bodyEl) {
-					if (p.tagName === 'PRE' || p.tagName === 'CODE') return NodeFilter.FILTER_REJECT;
-					p = p.parentElement;
-				}
-				const v = node.nodeValue ?? '';
-				return v.toLowerCase().includes(lowerQ)
-					? NodeFilter.FILTER_ACCEPT
-					: NodeFilter.FILTER_REJECT;
-			}
-		});
-
-		const textNodes: Text[] = [];
-		let n: Node | null;
-		while ((n = walker.nextNode())) textNodes.push(n as Text);
-
 		const collected: HTMLElement[] = [];
-		for (const text of textNodes) {
-			const value = text.nodeValue ?? '';
-			const lower = value.toLowerCase();
+
+		for (const entry of textIndex) {
+			if (!entry.lower.includes(lowerQ)) continue;
+			const value = entry.node.nodeValue ?? '';
+			const lower = entry.lower;
 			const frag = document.createDocumentFragment();
 			let last = 0;
 			let pos = lower.indexOf(lowerQ);
@@ -123,7 +181,7 @@
 				pos = lower.indexOf(lowerQ, last);
 			}
 			if (last < value.length) frag.appendChild(document.createTextNode(value.slice(last)));
-			text.parentNode?.replaceChild(frag, text);
+			entry.node.parentNode?.replaceChild(frag, entry.node);
 		}
 
 		matches = collected;
@@ -178,8 +236,7 @@
 		if (e.key === 'Escape') {
 			e.preventDefault();
 			e.stopPropagation();
-			if (searchOpen) closeSearch();
-			else onClose();
+			onClose();
 			return;
 		}
 		if (searchOpen && (e.key === 'Enter' || e.key === 'F3')) {
@@ -245,6 +302,7 @@
 			</header>
 
 			{#if searchOpen}
+				{@const tooShort = query.trim().length > 0 && query.trim().length < MIN_QUERY_LENGTH}
 				<div class="shrink-0 flex items-center gap-2 px-5 py-2 border-b border-base-content/10 bg-base-200/40">
 					<span class="text-base-content/50 text-sm">🔎</span>
 					<input
@@ -252,10 +310,18 @@
 						bind:value={query}
 						type="text"
 						class="flex-1 bg-transparent outline-none text-sm placeholder:text-base-content/40"
-						placeholder="Search in document…"
+						placeholder="Search in document (≥{MIN_QUERY_LENGTH} chars)…"
 					/>
-					<span class="text-[10px] font-mono text-base-content/50 shrink-0">
-						{matches.length === 0 ? '0' : `${currentIdx + 1}/${matches.length}`}
+					<span class="text-[10px] font-mono text-base-content/50 shrink-0 w-16 text-right">
+						{#if searching}
+							…
+						{:else if tooShort}
+							type more
+						{:else if effectiveQuery === ''}
+							0
+						{:else}
+							{currentIdx + 1}/{matches.length}
+						{/if}
 					</span>
 					<button
 						class="btn btn-ghost btn-xs h-7 min-h-7 w-7 px-0 text-base"
@@ -274,7 +340,7 @@
 					<button
 						class="btn btn-ghost btn-xs h-7 min-h-7 w-7 px-0 text-base leading-none"
 						onclick={closeSearch}
-						title="Close search (Esc)"
+						title="Close search bar"
 						aria-label="Close search"
 					>×</button>
 				</div>
