@@ -394,24 +394,32 @@
 {/if}
 
 <style>
+	/*
+	 * Hardcoded colors with !important so the marks render the same way in
+	 * every theme — Catppuccin's CSS variables don't always resolve cleanly
+	 * inside dynamically-inserted <mark> nodes that came from {@html}.
+	 */
 	:global(mark.md-search-hit) {
-		background: oklch(var(--wa) / 0.9);
-		color: oklch(var(--n));
+		background-color: #fde047 !important; /* yellow-300 */
+		color: #1f2937 !important;            /* slate-800 */
 		border-radius: 3px;
 		padding: 1px 3px;
 		margin: 0 1px;
 		font-weight: 600;
 		box-shadow:
-			0 0 0 1px oklch(var(--wa) / 0.6),
-			0 1px 4px oklch(var(--wa) / 0.35);
-		transition: background 0.15s ease, box-shadow 0.18s ease, color 0.15s ease;
+			0 0 0 1px #ca8a04,                /* yellow-600 ring */
+			0 1px 4px rgba(0, 0, 0, 0.25);
+		transition: background-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+		position: relative;
+		z-index: 1;
 	}
 	:global(mark.md-search-hit.current) {
-		background: oklch(var(--er));
-		color: oklch(var(--b1));
+		background-color: #ef4444 !important; /* red-500 */
+		color: #ffffff !important;
 		box-shadow:
-			0 0 0 2px oklch(var(--er) / 0.85),
-			0 0 16px oklch(var(--er) / 0.55),
-			0 2px 6px rgba(0, 0, 0, 0.25);
+			0 0 0 2px #b91c1c,                /* red-700 ring */
+			0 0 18px rgba(239, 68, 68, 0.65),
+			0 2px 6px rgba(0, 0, 0, 0.35);
+		z-index: 2;
 	}
 </style>
