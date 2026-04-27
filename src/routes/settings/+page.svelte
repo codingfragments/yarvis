@@ -176,6 +176,43 @@
 		</div>
 	</section>
 
+	<!-- Dashboard -->
+	<section class="rounded-xl bg-base-200/40 border border-base-content/5 p-5 flex flex-col gap-4">
+		<h2 class="text-xs font-semibold uppercase tracking-wider text-base-content/50">Dashboard</h2>
+
+		<div class="form-control">
+			<label class="label" for="daily-dir">
+				<span class="label-text">Daily Briefing Directory</span>
+			</label>
+			<input
+				id="daily-dir"
+				type="text"
+				class="input input-bordered input-sm w-full font-mono text-sm"
+				value={settings.current.daily_dir}
+				oninput={(e) => settings.update({ daily_dir: e.currentTarget.value })}
+			/>
+			<label class="label" for="daily-dir">
+				<span class="label-text-alt text-base-content/30">Folder containing <code>daily.json</code>, <code>question.md</code>, <code>memory.md</code></span>
+			</label>
+		</div>
+
+		<div class="form-control">
+			<label class="label" for="daily-src-dir">
+				<span class="label-text">Briefing Config Directory</span>
+			</label>
+			<input
+				id="daily-src-dir"
+				type="text"
+				class="input input-bordered input-sm w-full font-mono text-sm"
+				value={settings.current.daily_src_dir}
+				oninput={(e) => settings.update({ daily_src_dir: e.currentTarget.value })}
+			/>
+			<label class="label" for="daily-src-dir">
+				<span class="label-text-alt text-base-content/30">Folder containing <code>briefing_config.yaml</code> (intelligence categories, deal colours)</span>
+			</label>
+		</div>
+	</section>
+
 	<!-- Briefings -->
 	<section class="rounded-xl bg-base-200/40 border border-base-content/5 p-5 flex flex-col gap-4">
 		<h2 class="text-xs font-semibold uppercase tracking-wider text-base-content/50">Briefings</h2>

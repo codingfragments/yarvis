@@ -1,0 +1,63 @@
+<script lang="ts">
+	import type { Snippet } from 'svelte';
+
+	interface Props {
+		icon?: string;
+		title: string;
+		subtitle?: string | null;
+		count?: number | null;
+		collapsible?: boolean;
+		defaultOpen?: boolean;
+		children: Snippet;
+		actions?: Snippet;
+	}
+
+	let {
+		icon,
+		title,
+		subtitle = null,
+		count = null,
+		collapsible = false,
+		defaultOpen = true,
+		children,
+		actions
+	}: Props = $props();
+
+	// eslint-disable-next-line svelte/no-state-referenced-locally
+	// svelte-ignore state_referenced_locally
+	let open = $state(defaultOpen);
+</script>
+
+<section class="rounded-xl bg-base-200/40 border border-base-content/5 overflow-hidden">
+	<header class="flex items-center gap-3 px-5 py-3 border-b border-base-content/5">
+		{#if icon}<span class="text-lg leading-none">{icon}</span>{/if}
+		<div class="flex-1 min-w-0">
+			<h2 class="text-sm font-semibold text-base-content truncate">
+				{title}
+				{#if count !== null && count !== undefined}
+					<span class="ml-1.5 text-[11px] font-mono text-base-content/40">{count}</span>
+				{/if}
+			</h2>
+			{#if subtitle}
+				<p class="text-[11px] text-base-content/50 mt-0.5 truncate">{subtitle}</p>
+			{/if}
+		</div>
+		{#if actions}
+			{@render actions()}
+		{/if}
+		{#if collapsible}
+			<button
+				class="btn btn-ghost btn-xs text-[11px]"
+				onclick={() => (open = !open)}
+				aria-expanded={open}
+			>
+				{open ? '▾' : '▸'}
+			</button>
+		{/if}
+	</header>
+	{#if open}
+		<div class="px-5 py-4">
+			{@render children()}
+		</div>
+	{/if}
+</section>
