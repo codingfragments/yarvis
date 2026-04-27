@@ -395,14 +395,23 @@
 
 <style>
 	:global(mark.md-search-hit) {
-		background: oklch(var(--wa) / 0.45);
-		color: oklch(var(--bc));
-		border-radius: 2px;
-		padding: 0 1px;
+		background: oklch(var(--wa) / 0.9);
+		color: oklch(var(--n));
+		border-radius: 3px;
+		padding: 1px 3px;
+		margin: 0 1px;
+		font-weight: 600;
+		box-shadow:
+			0 0 0 1px oklch(var(--wa) / 0.6),
+			0 1px 4px oklch(var(--wa) / 0.35);
+		transition: background 0.15s ease, box-shadow 0.18s ease, color 0.15s ease;
 	}
 	:global(mark.md-search-hit.current) {
-		background: oklch(var(--p) / 0.55);
-		outline: 1px solid oklch(var(--p));
-		outline-offset: 1px;
+		background: oklch(var(--er));
+		color: oklch(var(--b1));
+		box-shadow:
+			0 0 0 2px oklch(var(--er) / 0.85),
+			0 0 16px oklch(var(--er) / 0.55),
+			0 2px 6px rgba(0, 0, 0, 0.25);
 	}
 </style>
