@@ -3,13 +3,16 @@
 	import { getDashboardStore } from '$lib/stores/dashboard.svelte';
 	import { getSettingsStore } from '$lib/stores/settings.svelte';
 	import { readPrep } from '$lib/services/dashboard';
-	import type { MeetingPrep } from '$lib/types';
+	import type { DashboardQuestion, MeetingPrep } from '$lib/types';
 	import DealPill from '$lib/components/dashboard/DealPill.svelte';
 	import UrgencyDot from '$lib/components/dashboard/UrgencyDot.svelte';
 	import SectionCard from '$lib/components/dashboard/SectionCard.svelte';
 	import ExternalLink from '$lib/components/dashboard/ExternalLink.svelte';
 	import MemoryDrawer from '$lib/components/dashboard/MemoryDrawer.svelte';
 	import PrepDrawer from '$lib/components/dashboard/PrepDrawer.svelte';
+	import QuestionEditor from '$lib/components/dashboard/QuestionEditor.svelte';
+	import QuestionStatusPill from '$lib/components/dashboard/QuestionStatusPill.svelte';
+	import MarkdownRenderer from '$lib/components/MarkdownRenderer.svelte';
 
 	const dashboard = getDashboardStore();
 	const settings = getSettingsStore();
@@ -29,6 +32,10 @@
 	let prepContent = $state<string | null>(null);
 	let prepError = $state<string | null>(null);
 	let prepMeta = $state<{ title: string; time: string; filename: string } | null>(null);
+	let questionEditorOpen = $state(false);
+	let editingQuestion = $state<DashboardQuestion | null>(null);
+	let editorError = $state<string | null>(null);
+	let showOpenQuestionsOnly = $state(true);
 
 	onMount(() => {
 		const h = window.location.hash.slice(1);
@@ -54,6 +61,28 @@
 		menuOpen = false;
 		await dashboard.loadMemory(settings.current.daily_dir);
 		memoryOpen = true;
+	}
+
+	function openQuestionEditor(q: DashboardQuestion) {
+		editingQuestion = q;
+		editorError = null;
+		questionEditorOpen = true;
+	}
+
+	async function saveQuestionAnswer(answer: string) {
+		if (!editingQuestion) return;
+		editorError = null;
+		try {
+			await dashboard.answerQuestion(
+				settings.current.daily_dir,
+				editingQuestion.title,
+				answer
+			);
+			questionEditorOpen = false;
+			editingQuestion = null;
+		} catch (e) {
+			editorError = String(e);
+		}
 	}
 
 	async function openPrep(p: MeetingPrep) {
@@ -398,47 +427,100 @@
 							{/if}
 
 							{#if dashboard.questions.length > 0}
+								{@const visibleQuestions = showOpenQuestionsOnly
+									? dashboard.questions.filter((q) => q.status === 'PENDING')
+									: dashboard.questions}
 								<SectionCard
 									icon="❓"
-									title="Pending questions"
-									subtitle={counts.pending > 0 ? 'Skill is asking — answer in question.md' : 'All answered'}
-									count={dashboard.questions.length}
-									collapsible={true}
-									defaultOpen={false}
+									title="Questions"
+									subtitle={counts.pending > 0
+										? `${counts.pending} pending of ${dashboard.questions.length}`
+										: `All ${dashboard.questions.length} answered`}
+									count={visibleQuestions.length}
 								>
-									<ul class="flex flex-col gap-2">
-										{#each dashboard.questions as q}
-											<li
-												class="rounded-lg border px-3 py-2"
-												class:border-warning={q.status === 'PENDING'}
-												class:bg-warning={q.status === 'PENDING'}
-												class:bg-opacity-5={q.status === 'PENDING'}
-												class:border-base-content={q.status !== 'PENDING'}
-												class:border-opacity-10={q.status !== 'PENDING'}
+									{#snippet actions()}
+										<button
+											class="btn btn-ghost btn-xs h-7 min-h-7 text-[11px] gap-1.5 normal-case"
+											class:btn-active={showOpenQuestionsOnly}
+											onclick={() => (showOpenQuestionsOnly = !showOpenQuestionsOnly)}
+											aria-pressed={showOpenQuestionsOnly}
+											title="Toggle filter"
+										>
+											<span class="inline-block w-3 h-3 rounded-sm border border-base-content/30 flex items-center justify-center text-[10px] leading-none"
+												class:bg-primary={showOpenQuestionsOnly}
+												class:border-primary={showOpenQuestionsOnly}
+												class:text-primary-content={showOpenQuestionsOnly}
 											>
-												<div class="flex items-center gap-2 mb-1">
-													<span
-														class="text-[10px] font-mono uppercase tracking-wider"
-														class:text-warning={q.status === 'PENDING'}
-														class:text-success={q.status === 'ANSWERED'}
-														class:opacity-50={q.status === 'PROCESSED'}
-													>
-														[{q.status}]
-													</span>
-													<h4 class="text-sm font-medium text-base-content">{q.title}</h4>
-												</div>
-												{#if q.context}
-													<p class="text-xs text-base-content/60 mb-1">{q.context}</p>
-												{/if}
-												{#if q.body}
-													<p class="text-xs text-base-content/70 whitespace-pre-wrap">{q.body}</p>
-												{/if}
-												{#if q.answer}
-													<div class="mt-2 rounded bg-base-300/40 px-2.5 py-1.5 text-xs text-base-content/80">{q.answer}</div>
-												{/if}
-											</li>
-										{/each}
-									</ul>
+												{showOpenQuestionsOnly ? '✓' : ''}
+											</span>
+											Open only
+										</button>
+									{/snippet}
+
+									{#if visibleQuestions.length === 0}
+										<p class="text-xs text-base-content/40 italic">
+											{showOpenQuestionsOnly
+												? 'No open questions. Toggle the filter to see answered ones.'
+												: 'No questions today.'}
+										</p>
+									{:else}
+										<ul class="flex flex-col gap-2.5">
+											{#each visibleQuestions as q (q.title)}
+												{@const editable = q.status !== 'PROCESSED'}
+												<li
+													class="group rounded-lg border bg-base-100/40 px-4 py-3 transition-colors"
+													class:border-warning={q.status === 'PENDING'}
+													class:border-opacity-30={q.status === 'PENDING'}
+													class:border-success={q.status === 'ANSWERED'}
+													class:border-opacity-25={q.status === 'ANSWERED'}
+													class:border-base-content={q.status === 'PROCESSED'}
+													class:border-opacity-10={q.status === 'PROCESSED'}
+													class:opacity-70={q.status === 'PROCESSED'}
+												>
+													<div class="flex items-start gap-2 mb-1.5">
+														<QuestionStatusPill status={q.status} />
+														<h4 class="flex-1 text-sm font-medium text-base-content leading-snug">{q.title}</h4>
+														{#if editable}
+															<button
+																class="shrink-0 btn btn-xs h-7 min-h-7 normal-case text-[11px]"
+																class:btn-primary={q.status === 'PENDING'}
+																class:btn-ghost={q.status === 'ANSWERED'}
+																onclick={() => openQuestionEditor(q)}
+															>
+																{q.status === 'PENDING' ? 'Answer' : 'Edit'}
+															</button>
+														{/if}
+													</div>
+
+													{#if q.context}
+														<p class="text-xs text-base-content/55 italic mb-1.5 leading-snug">{q.context}</p>
+													{/if}
+
+													{#if q.body}
+														<div class="text-xs text-base-content/75 leading-relaxed">
+															<MarkdownRenderer markdown={q.body} />
+														</div>
+													{/if}
+
+													{#if q.answer}
+														<div class="mt-2.5 rounded-md bg-success/5 border-l-2 border-success/50 px-3 py-2">
+															<div class="text-[10px] uppercase tracking-wider text-success/80 font-semibold mb-0.5">
+																Your answer
+															</div>
+															<p class="text-xs text-base-content/85 whitespace-pre-wrap leading-snug">{q.answer}</p>
+														</div>
+													{/if}
+
+													{#if q.asked || q.run}
+														<div class="flex items-center gap-1.5 text-[10px] text-base-content/35 font-mono mt-2">
+															{#if q.asked}<span>asked {q.asked}</span>{/if}
+															{#if q.run}<span>· run {q.run}</span>{/if}
+														</div>
+													{/if}
+												</li>
+											{/each}
+										</ul>
+									{/if}
 								</SectionCard>
 							{/if}
 
@@ -671,4 +753,17 @@
 	loading={prepLoading}
 	error={prepError}
 	onClose={() => (prepDrawerOpen = false)}
+/>
+
+<QuestionEditor
+	open={questionEditorOpen}
+	question={editingQuestion}
+	saving={dashboard.submittingAnswer}
+	error={editorError}
+	onSave={saveQuestionAnswer}
+	onClose={() => {
+		questionEditorOpen = false;
+		editingQuestion = null;
+		editorError = null;
+	}}
 />

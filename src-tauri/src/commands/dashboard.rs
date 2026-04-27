@@ -473,6 +473,24 @@ pub fn read_questions(daily_dir: String) -> Result<Vec<DashboardQuestion>, Strin
     Ok(parse_questions(&raw))
 }
 
+/// Replace the answer block of a question (matched by title) and flip its
+/// status header. Empty answers restore the placeholder and flip to PENDING.
+#[tauri::command]
+pub fn answer_question(
+    daily_dir: String,
+    title: String,
+    answer: String,
+) -> Result<(), String> {
+    let path = resolve_dir(&daily_dir).join("question.md");
+    let content = fs::read_to_string(&path)
+        .map_err(|e| format!("Failed to read question.md: {}", e))?;
+    let updated = patch_question_answer(&content, &title, &answer)
+        .ok_or_else(|| format!("Question not found or already processed: {}", title))?;
+    fs::write(&path, updated)
+        .map_err(|e| format!("Failed to write question.md: {}", e))?;
+    Ok(())
+}
+
 fn count_pending_questions(content: &str) -> usize {
     content
         .lines()
@@ -585,4 +603,176 @@ fn trim_blank(lines: &[String]) -> Vec<String> {
 fn is_placeholder_answer(text: &str) -> bool {
     let t = text.trim();
     t == "*(type your answer here)*" || t == "(type your answer here)"
+}
+
+/// Pure helper: given the file content, produce the updated content with the
+/// matching question's answer block replaced and status flipped. Returns
+/// None if no editable question matches the title.
+fn patch_question_answer(content: &str, title: &str, answer: &str) -> Option<String> {
+    let trailing_newline = content.ends_with('\n');
+    let mut lines: Vec<String> = content.lines().map(String::from).collect();
+
+    let header_idx = find_question_header(&lines, title)?;
+    let (qstart, qend) = find_blockquote_in_section(&lines, header_idx);
+
+    let answer_text = answer.trim();
+    let new_block: Vec<String> = if answer_text.is_empty() {
+        vec!["> *(type your answer here)*".to_string()]
+    } else {
+        answer_text
+            .lines()
+            .map(|l| if l.is_empty() { ">".to_string() } else { format!("> {}", l) })
+            .collect()
+    };
+
+    // Splice in the new block (or insert if no existing blockquote was found)
+    if let (Some(start), Some(end)) = (qstart, qend) {
+        lines.splice(start..=end, new_block);
+    } else {
+        // Insert just before the next section break, or at the section's end
+        let insert_at = find_section_end(&lines, header_idx);
+        // Add a leading blank line if the previous non-empty line isn't already blank
+        let mut to_insert = Vec::new();
+        if insert_at > 0 && !lines[insert_at - 1].trim().is_empty() {
+            to_insert.push(String::new());
+        }
+        to_insert.extend(new_block);
+        for (i, l) in to_insert.into_iter().enumerate() {
+            lines.insert(insert_at + i, l);
+        }
+    }
+
+    // Flip the status tag
+    let new_status = if answer_text.is_empty() { "[PENDING]" } else { "[ANSWERED]" };
+    lines[header_idx] = lines[header_idx]
+        .replacen("[PENDING]", new_status, 1)
+        .replacen("[ANSWERED]", new_status, 1);
+
+    let mut out = lines.join("\n");
+    if trailing_newline {
+        out.push('\n');
+    }
+    Some(out)
+}
+
+fn find_question_header(lines: &[String], title: &str) -> Option<usize> {
+    let needle = title.trim();
+    lines.iter().position(|l| {
+        let t = l.trim_start();
+        if !t.starts_with("## [") {
+            return false;
+        }
+        let rest = &t[3..]; // after "## "
+        if let Some(end) = rest.find(']') {
+            let status = &rest[1..end];
+            // Refuse processed entries
+            if status == "PROCESSED" {
+                return false;
+            }
+            let title_part = rest[end + 1..].trim();
+            return title_part == needle;
+        }
+        false
+    })
+}
+
+/// Returns (start, end) of the contiguous blockquote inside the section
+/// starting at `header_idx + 1`. None if no blockquote exists in the section.
+fn find_blockquote_in_section(
+    lines: &[String],
+    header_idx: usize,
+) -> (Option<usize>, Option<usize>) {
+    let section_end = find_section_end(lines, header_idx);
+    let mut i = header_idx + 1;
+    let mut start: Option<usize> = None;
+    while i < section_end {
+        if lines[i].trim_start().starts_with('>') {
+            start = Some(i);
+            break;
+        }
+        i += 1;
+    }
+    let Some(s) = start else {
+        return (None, None);
+    };
+    let mut end = s;
+    let mut j = s;
+    while j < section_end {
+        if !lines[j].trim_start().starts_with('>') {
+            break;
+        }
+        end = j;
+        j += 1;
+    }
+    (Some(s), Some(end))
+}
+
+fn find_section_end(lines: &[String], header_idx: usize) -> usize {
+    for i in (header_idx + 1)..lines.len() {
+        let t = lines[i].trim_start();
+        if t.starts_with("## ") || t == "---" {
+            return i;
+        }
+    }
+    lines.len()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn sample() -> String {
+        "## [PENDING] First question\n\
+        **Asked:** 2026-04-27\n\
+        **Context:** something\n\
+        \n\
+        Question body line 1.\n\
+        Question body line 2.\n\
+        \n\
+        > *(type your answer here)*\n\
+        \n\
+        ---\n\
+        \n\
+        ## [PENDING] Second question\n\
+        \n\
+        > *(type your answer here)*\n\
+        \n\
+        ---\n"
+            .to_string()
+    }
+
+    #[test]
+    fn answers_pending_question_and_flips_status() {
+        let updated = patch_question_answer(&sample(), "First question", "My answer.").unwrap();
+        assert!(updated.contains("## [ANSWERED] First question"));
+        assert!(updated.contains("> My answer."));
+        assert!(!updated.contains("First question\n**Asked:** 2026-04-27\n**Context:** something\n\n> *(type your answer here)*"));
+        // second question untouched
+        assert!(updated.contains("## [PENDING] Second question"));
+    }
+
+    #[test]
+    fn empty_answer_restores_placeholder_and_pending() {
+        let answered = patch_question_answer(&sample(), "First question", "Real answer").unwrap();
+        let cleared = patch_question_answer(&answered, "First question", "   ").unwrap();
+        assert!(cleared.contains("## [PENDING] First question"));
+        assert!(cleared.contains("> *(type your answer here)*"));
+    }
+
+    #[test]
+    fn unknown_title_returns_none() {
+        assert!(patch_question_answer(&sample(), "Not present", "x").is_none());
+    }
+
+    #[test]
+    fn refuses_processed_questions() {
+        let processed = sample().replace("[PENDING] First question", "[PROCESSED] First question");
+        assert!(patch_question_answer(&processed, "First question", "x").is_none());
+    }
+
+    #[test]
+    fn multiline_answer_prefixes_each_line() {
+        let updated = patch_question_answer(&sample(), "First question", "line one\nline two").unwrap();
+        assert!(updated.contains("> line one\n> line two"));
+    }
 }
