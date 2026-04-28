@@ -35,12 +35,6 @@ export interface Heading {
 	level: number;
 }
 
-export interface TodayWidgets {
-	focus: string | null;
-	fun_fact: string | null;
-	date_display: string;
-}
-
 export interface SystemInfo {
 	app_version: string;
 	os: string;

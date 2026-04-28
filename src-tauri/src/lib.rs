@@ -15,7 +15,6 @@ pub fn run() {
             commands::briefings::list_date_files,
             commands::briefings::read_briefing,
             commands::briefings::toggle_checkbox,
-            commands::briefings::get_today_widgets,
             commands::dashboard::read_daily,
             commands::dashboard::read_config,
             commands::dashboard::read_memory,
