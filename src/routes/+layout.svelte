@@ -4,6 +4,9 @@
 	import StatusBar from '$lib/components/StatusBar.svelte';
 	import { getSettingsStore } from '$lib/stores/settings.svelte';
 	import { onMount } from 'svelte';
+	import pkg from '../../package.json';
+
+	const appVersion = pkg.version;
 
 	let { children } = $props();
 	const settingsStore = getSettingsStore();
@@ -47,5 +50,5 @@
 	</main>
 
 	<!-- Status bar -->
-	<StatusBar />
+	<StatusBar version={appVersion} />
 </div>
