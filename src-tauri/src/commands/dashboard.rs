@@ -348,9 +348,20 @@ pub fn read_daily(daily_dir: String, briefings_dir: String) -> Result<DailyBrief
     Ok(briefing)
 }
 
-/// Filter meeting_preps to only those that have a matching `meeting-prep-HHMM-*.md`
-/// on disk in the dated briefings folder, and backfill the `file` field with the
-/// real filename. Entries without a matching prep file are dropped.
+/// Filter `meeting_preps[]` to only entries whose prep file exists on disk
+/// in the dated briefings folder.
+///
+/// - When the JSON entry already carries a `file` (the new skill output),
+///   we trust the filename and just verify it exists. This handles names
+///   that don't follow the `meeting-prep-HHMM-` pattern, e.g.
+///   `meeting-prep-internal-1100-ignacio.md`.
+/// - When the JSON entry has `file: null` (older briefings), we fall back
+///   to a time-prefix match against `meeting-prep-<HHMM>-*.md` and
+///   backfill `file`.
+///
+/// Either way the entry is dropped if no real file is found, and the
+/// filename must start with `meeting-prep-` and end with `.md` so the
+/// morning briefing can never sneak through.
 fn resolve_meeting_preps(
     briefings_root: &PathBuf,
     briefing_date: &str,
@@ -375,6 +386,14 @@ fn resolve_meeting_preps(
     preps
         .into_iter()
         .filter_map(|mut p| {
+            if let Some(file) = p.file.clone() {
+                if !is_safe_prep_filename(&file) {
+                    return None;
+                }
+                let path = dated_dir.join(&file);
+                return if path.is_file() { Some(p) } else { None };
+            }
+            // Legacy fallback: file field is null, locate by time-prefix.
             let compact_time = p.time.replace(':', "");
             let prefix = format!("meeting-prep-{}-", compact_time);
             prep_files
@@ -386,6 +405,14 @@ fn resolve_meeting_preps(
                 })
         })
         .collect()
+}
+
+fn is_safe_prep_filename(name: &str) -> bool {
+    name.starts_with("meeting-prep-")
+        && name.ends_with(".md")
+        && !name.contains('/')
+        && !name.contains('\\')
+        && !name.contains("..")
 }
 
 #[tauri::command]
