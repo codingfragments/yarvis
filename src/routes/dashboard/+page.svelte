@@ -501,7 +501,7 @@
 									<li class="rounded-lg bg-base-100/40 border border-base-content/5 px-3 py-2.5 flex flex-col gap-1.5">
 										<div class="flex items-start gap-2">
 											<UrgencyDot urgency={a.priority} size="md" />
-											<p class="flex-1 text-xs text-base-content/85 leading-snug">{a.text}</p>
+											<p class="flex-1 min-w-0 text-xs text-base-content/85 leading-snug break-words">{a.text}</p>
 										</div>
 										<div class="flex items-center gap-1.5 flex-wrap text-[10px] text-base-content/50">
 											{#if a.deadline}<span class="font-mono">⏰ {a.deadline}</span>{/if}
@@ -567,7 +567,7 @@
 			</aside>
 
 			<!-- Right pane: tabs + content (independent scroll on md+) -->
-			<div class="order-1 md:order-none md:flex-1 md:min-h-0 flex flex-col">
+			<div class="order-1 md:order-none md:flex-1 md:min-w-0 md:min-h-0 flex flex-col">
 				<!-- Tab strip -->
 				<nav class="shrink-0 flex gap-1 border-b border-base-content/10 -mx-1 px-1 overflow-x-auto">
 					{#each TAB_KEYS as key}
@@ -600,7 +600,7 @@
 				</nav>
 
 				<!-- Tab content -->
-				<div class="md:flex-1 md:overflow-y-auto md:min-h-0 pt-4">
+				<div class="md:flex-1 md:min-w-0 md:overflow-y-auto md:min-h-0 pt-4">
 					{#if tab === 'summary'}
 						<div class="flex flex-col gap-4">
 							{#if b.greeting}
@@ -734,11 +734,11 @@
 							{#if filteredConflicts.length > 0}
 								<div class="flex flex-col gap-2">
 									{#each filteredConflicts as c}
-										<div class="rounded-lg bg-warning/10 border border-warning/20 px-3 py-2.5">
+										<div class="min-w-0 rounded-lg bg-warning/10 border border-warning/20 px-3 py-2.5">
 											<div class="flex items-center gap-2 text-xs font-medium text-warning mb-1">⚠️ Conflict at {c.time}</div>
-											<p class="text-xs text-base-content/80">{c.description}</p>
+											<p class="text-xs text-base-content/80 break-words">{c.description}</p>
 											{#if c.action_needed}
-												<p class="text-xs font-semibold text-base-content/90 mt-1.5">→ {c.action_needed}</p>
+												<p class="text-xs font-semibold text-base-content/90 mt-1.5 break-words">→ {c.action_needed}</p>
 											{/if}
 										</div>
 									{/each}
@@ -763,7 +763,7 @@
 												<DealPill {deal} fallbackId={e.deal_tag} />
 												{#if e.initiative}<span class="text-[10px] text-base-content/50">· {e.initiative}</span>{/if}
 											</div>
-											{#if e.notes}<p class="text-[11px] text-base-content/55 leading-snug">{e.notes}</p>{/if}
+											{#if e.notes}<p class="text-[11px] text-base-content/55 leading-snug break-words">{e.notes}</p>{/if}
 											{#if e.participants.length > 0}
 												<p class="text-[10px] text-base-content/40 truncate">{e.participants.join(', ')}</p>
 											{/if}
@@ -798,9 +798,9 @@
 													<DealPill {deal} fallbackId={m.deal_tag} />
 													{#if m.url}<ExternalLink href={m.url} label="gmail" />{/if}
 												</div>
-												<p class="text-xs text-base-content/85 mb-0.5">{m.subject}</p>
-												<p class="text-[11px] text-base-content/65 leading-snug">{m.summary}</p>
-												{#if m.action}<p class="text-[11px] text-base-content/85 font-medium mt-1">→ {m.action}</p>{/if}
+												<p class="text-xs text-base-content/85 mb-0.5 break-words">{m.subject}</p>
+												<p class="text-[11px] text-base-content/65 leading-snug break-words">{m.summary}</p>
+												{#if m.action}<p class="text-[11px] text-base-content/85 font-medium mt-1 break-words">→ {m.action}</p>{/if}
 											</li>
 										{/each}
 									</ul>
@@ -820,8 +820,8 @@
 													<DealPill {deal} fallbackId={m.deal_tag} />
 													{#if m.url}<ExternalLink href={m.url} label="gmail" />{/if}
 												</div>
-												<p class="text-[11px] text-base-content/60 leading-snug">{m.summary}</p>
-												{#if m.context}<p class="text-[11px] text-base-content/50 italic mt-0.5">{m.context}</p>{/if}
+												<p class="text-[11px] text-base-content/60 leading-snug break-words">{m.summary}</p>
+												{#if m.context}<p class="text-[11px] text-base-content/50 italic mt-0.5 break-words">{m.context}</p>{/if}
 											</li>
 										{/each}
 									</ul>
@@ -873,13 +873,13 @@
 															{#if msg.author}<span class="font-medium text-base-content/80">{msg.author}</span>{/if}
 															{#if msg.timestamp}<span class="text-base-content/40 text-[10px]">{msg.timestamp.slice(11, 16)}</span>{/if}
 														</div>
-														<p class="text-base-content/65 leading-snug">{msg.summary}</p>
+														<p class="text-base-content/65 leading-snug break-words">{msg.summary}</p>
 														{#if msg.links.length > 0}
 															<div class="flex flex-wrap gap-1 mt-1">
 																{#each msg.links as l}<ExternalLink href={l.url} label={l.label} />{/each}
 															</div>
 														{/if}
-														{#if msg.action}<p class="text-base-content/85 font-medium mt-0.5">→ {msg.action}</p>{/if}
+														{#if msg.action}<p class="text-base-content/85 font-medium mt-0.5 break-words">→ {msg.action}</p>{/if}
 													</li>
 												{/each}
 											</ul>
@@ -897,8 +897,8 @@
 													<span class="font-medium text-base-content/80">{dm.with}</span>
 													{#if dm.url}<ExternalLink href={dm.url} label="open" />{/if}
 												</div>
-												<p class="text-[11px] text-base-content/60">{dm.summary}</p>
-												{#if dm.action}<p class="text-[11px] text-base-content/85 font-medium mt-0.5">→ {dm.action}</p>{/if}
+												<p class="text-[11px] text-base-content/60 break-words">{dm.summary}</p>
+												{#if dm.action}<p class="text-[11px] text-base-content/85 font-medium mt-0.5 break-words">→ {dm.action}</p>{/if}
 											</li>
 										{/each}
 									</ul>
@@ -926,11 +926,11 @@
 										{#each cat.items as it}
 											<li class="rounded-lg bg-base-100/30 px-3 py-2.5">
 												<div class="flex items-start gap-2 mb-1 flex-wrap">
-													<h4 class="text-xs font-semibold text-base-content/90 flex-1 min-w-0">{it.headline}</h4>
+													<h4 class="text-xs font-semibold text-base-content/90 flex-1 min-w-0 break-words">{it.headline}</h4>
 													{#if it.url}<ExternalLink href={it.url} label={it.source ?? 'source'} />{/if}
 												</div>
-												<p class="text-[11px] text-base-content/65 leading-snug">{it.detail}</p>
-												{#if it.relevance}<p class="text-[11px] text-primary/80 italic mt-1.5">↳ {it.relevance}</p>{/if}
+												<p class="text-[11px] text-base-content/65 leading-snug break-words">{it.detail}</p>
+												{#if it.relevance}<p class="text-[11px] text-primary/80 italic mt-1.5 break-words">↳ {it.relevance}</p>{/if}
 											</li>
 										{/each}
 									</ul>
