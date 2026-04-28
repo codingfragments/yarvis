@@ -196,33 +196,20 @@
 					</div>
 				</a>
 
-				<!-- D. Pending questions (always rendered for grid balance, dimmed when 0) -->
+				<!-- D. Pending questions -->
 				<a
 					href="/dashboard#summary"
-					class="rounded-xl border p-3 flex flex-col gap-1 transition-colors no-underline"
-					class:bg-warning={pendingQuestions > 0}
-					class:bg-opacity-15={pendingQuestions > 0}
-					class:border-warning={pendingQuestions > 0}
-					class:border-opacity-30={pendingQuestions > 0}
-					class:bg-base-200={pendingQuestions === 0}
-					class:bg-opacity-40={pendingQuestions === 0}
-					class:border-base-content={pendingQuestions === 0}
-					class:border-opacity-5={pendingQuestions === 0}
-					class:hover:bg-warning={pendingQuestions > 0}
-					class:hover:bg-opacity-25={pendingQuestions > 0}
+					class="rounded-xl bg-base-200/40 border border-base-content/5 p-3 flex flex-col gap-1 hover:bg-base-200/60 transition-colors no-underline"
 				>
-					<div class="text-[10px] uppercase tracking-wider font-semibold"
-						class:text-warning={pendingQuestions > 0}
-						class:text-base-content={pendingQuestions === 0}
-						class:text-opacity-40={pendingQuestions === 0}
-					>
+					<div class="text-[10px] uppercase tracking-wider text-base-content/40 font-semibold">
 						Questions
 					</div>
 					{#if pendingQuestions > 0}
-						<div class="text-base font-mono text-warning">
-							{pendingQuestions} pending
+						<div class="flex items-baseline gap-1.5">
+							<span class="text-base font-mono text-warning">{pendingQuestions}</span>
+							<span class="text-xs text-base-content/60">open</span>
 						</div>
-						<div class="text-[10px] text-base-content/60">Click to answer →</div>
+						<div class="text-[10px] text-base-content/40">Click to answer →</div>
 					{:else}
 						<div class="text-sm text-base-content/40 italic">All caught up</div>
 					{/if}
