@@ -1,12 +1,14 @@
 <script lang="ts">
 	import AppLauncher from '$lib/components/AppLauncher.svelte';
 	import { getSettingsStore } from '$lib/stores/settings.svelte';
+	import { getRefreshStore } from '$lib/stores/refresh.svelte';
 	import { readDaily, getDailyStatus } from '$lib/services/dashboard';
 	import { isTauri } from '$lib/services/tauri';
 	import { onMount } from 'svelte';
 	import type { ActionItem, DailyBriefing } from '$lib/types';
 
 	const settings = getSettingsStore();
+	const refresh = getRefreshStore();
 
 	let briefing = $state<DailyBriefing | null>(null);
 	let pendingQuestions = $state(0);
@@ -20,7 +22,14 @@
 		if (!isTauri()) return;
 		const tick = setInterval(() => (now = new Date()), 30_000);
 		void load();
-		return () => clearInterval(tick);
+		const unregister = refresh.register({
+			id: 'home',
+			softRefresh: softRefreshHome
+		});
+		return () => {
+			clearInterval(tick);
+			unregister();
+		};
 	});
 
 	async function load() {
@@ -48,6 +57,22 @@
 		} catch (e) {
 			loadError = String(e);
 			loaded = true;
+		}
+	}
+
+	async function softRefreshHome() {
+		if (!isTauri() || !settings.loaded) return;
+		const { daily_dir, briefings_dir } = settings.current;
+		const [b, status] = await Promise.allSettled([
+			readDaily(daily_dir, briefings_dir),
+			getDailyStatus(daily_dir)
+		]);
+		if (status.status === 'fulfilled') {
+			pendingQuestions = status.value.pending_questions;
+			dailyExists = status.value.exists;
+		}
+		if (b.status === 'fulfilled') {
+			briefing = b.value;
 		}
 	}
 

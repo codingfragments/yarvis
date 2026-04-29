@@ -64,6 +64,24 @@ export function getDashboardStore() {
 			}
 		},
 
+		async softRefresh(dailyDir: string, dailySrcDir: string, briefingsDir: string) {
+			if (!isTauri()) return;
+			if (submittingAnswer) return;
+			const [b, c, q] = await Promise.allSettled([
+				dashboardService.readDaily(dailyDir, briefingsDir),
+				dashboardService.readConfig(dailySrcDir),
+				dashboardService.readQuestions(dailyDir)
+			]);
+			if (b.status === 'fulfilled') briefing = b.value;
+			if (c.status === 'fulfilled') config = c.value;
+			if (q.status === 'fulfilled') questions = q.value;
+			lastLoaded = new Date();
+		},
+
+		isBusy(): boolean {
+			return submittingAnswer;
+		},
+
 		async loadMemory(dailyDir: string) {
 			if (!isTauri()) return;
 			try {

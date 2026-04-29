@@ -11,6 +11,8 @@ export interface Settings {
 	learning_dir: string;
 	daily_dir: string;
 	daily_src_dir: string;
+	auto_refresh_enabled: boolean;
+	auto_refresh_interval_minutes: number;
 }
 
 export interface DateEntry {

@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { getDashboardStore } from '$lib/stores/dashboard.svelte';
 	import { getSettingsStore } from '$lib/stores/settings.svelte';
+	import { getRefreshStore } from '$lib/stores/refresh.svelte';
 	import { readPrep } from '$lib/services/dashboard';
 	import { isTauri } from '$lib/services/tauri';
 	import type { DashboardQuestion, MeetingPrep } from '$lib/types';
@@ -19,6 +20,7 @@
 
 	const dashboard = getDashboardStore();
 	const settings = getSettingsStore();
+	const refresh = getRefreshStore();
 
 	const TAB_KEYS = ['summary', 'calendar', 'email', 'slack', 'research'] as const;
 	type TabKey = (typeof TAB_KEYS)[number];
@@ -56,9 +58,19 @@
 		};
 		window.addEventListener('keydown', onKey);
 		void load();
+		const unregister = refresh.register({
+			id: 'dashboard',
+			softRefresh: async () => {
+				if (!settings.loaded) return;
+				const { daily_dir, daily_src_dir, briefings_dir } = settings.current;
+				await dashboard.softRefresh(daily_dir, daily_src_dir, briefings_dir);
+			},
+			isBusy: () => dashboard.isBusy()
+		});
 		return () => {
 			clearInterval(t);
 			window.removeEventListener('keydown', onKey);
+			unregister();
 		};
 	});
 
