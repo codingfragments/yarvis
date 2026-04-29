@@ -135,12 +135,12 @@
 									<div class="flex-1 min-w-0">
 										<div class="flex items-center gap-2">
 											<span class="text-sm text-base-content truncate font-medium">{r.title}</span>
-											<span class="text-[9px] uppercase tracking-wider {meta.tone} font-mono shrink-0">
+											<span class="text-[10px] uppercase tracking-wider {meta.tone} font-mono shrink-0">
 												{meta.label}
 											</span>
 										</div>
 										{#if r.subtitle}
-											<p class="text-[11px] text-base-content/55 truncate leading-tight mt-0.5">
+											<p class="text-xs text-base-content/55 truncate leading-tight mt-0.5">
 												{r.subtitle}
 											</p>
 										{/if}

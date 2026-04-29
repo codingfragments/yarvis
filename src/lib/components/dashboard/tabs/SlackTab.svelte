@@ -43,11 +43,11 @@
 					{#if ch.url}<ExternalLink href={ch.url} label="open" />{/if}
 				</div>
 				{#if ch.messages.length === 0}
-					<p class="text-[11px] text-base-content/40">No messages.</p>
+					<p class="text-xs text-base-content/40">No messages.</p>
 				{:else}
 					<ul class="flex flex-col gap-1.5">
 						{#each ch.messages as msg}
-							<li class="text-[11px] border-l border-base-content/10 pl-2.5">
+							<li class="text-xs border-l border-base-content/10 pl-2.5">
 								<div class="flex items-center gap-1.5 mb-0.5">
 									{#if msg.author}<span class="font-medium text-base-content/80">{msg.author}</span>{/if}
 									{#if msg.timestamp}<span class="text-base-content/40 text-[10px]">{msg.timestamp.slice(11, 16)}</span>{/if}
@@ -76,8 +76,8 @@
 							<span class="font-medium text-base-content/80">{dm.with}</span>
 							{#if dm.url}<ExternalLink href={dm.url} label="open" />{/if}
 						</div>
-						<p class="text-[11px] text-base-content/60 break-words">{dm.summary}</p>
-						{#if dm.action}<p class="text-[11px] text-base-content/85 font-medium mt-0.5 break-words">→ {dm.action}</p>{/if}
+						<p class="text-xs text-base-content/60 break-words">{dm.summary}</p>
+						{#if dm.action}<p class="text-xs text-base-content/85 font-medium mt-0.5 break-words">→ {dm.action}</p>{/if}
 					</li>
 				{/each}
 			</ul>

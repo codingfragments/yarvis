@@ -36,8 +36,8 @@
 							{#if m.url}<ExternalLink href={m.url} label="gmail" />{/if}
 						</div>
 						<p class="text-xs text-base-content/85 mb-0.5 break-words">{m.subject}</p>
-						<p class="text-[11px] text-base-content/65 leading-snug break-words">{m.summary}</p>
-						{#if m.action}<p class="text-[11px] text-base-content/85 font-medium mt-1 break-words">→ {m.action}</p>{/if}
+						<p class="text-xs text-base-content/65 leading-snug break-words">{m.summary}</p>
+						{#if m.action}<p class="text-xs text-base-content/85 font-medium mt-1 break-words">→ {m.action}</p>{/if}
 					</li>
 				{/each}
 			</ul>
@@ -57,8 +57,8 @@
 							<DealPill {deal} fallbackId={m.deal_tag} />
 							{#if m.url}<ExternalLink href={m.url} label="gmail" />{/if}
 						</div>
-						<p class="text-[11px] text-base-content/60 leading-snug break-words">{m.summary}</p>
-						{#if m.context}<p class="text-[11px] text-base-content/50 italic mt-0.5 break-words">{m.context}</p>{/if}
+						<p class="text-xs text-base-content/60 leading-snug break-words">{m.summary}</p>
+						{#if m.context}<p class="text-xs text-base-content/50 italic mt-0.5 break-words">{m.context}</p>{/if}
 					</li>
 				{/each}
 			</ul>

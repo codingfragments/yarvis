@@ -59,12 +59,12 @@
 	{/if}
 
 	<button
-		class="btn btn-ghost btn-sm text-[11px] gap-1.5 hidden sm:inline-flex"
+		class="btn btn-ghost btn-sm text-xs gap-1.5 hidden sm:inline-flex"
 		onclick={onPalette}
 		title="Search today (⌘K)"
 	>
 		🔎
-		<kbd class="text-[9px] font-mono px-1 py-0.5 bg-base-300/50 rounded border border-base-content/10">⌘K</kbd>
+		<kbd class="text-[10px] font-mono px-1 py-0.5 bg-base-300/50 rounded border border-base-content/10">⌘K</kbd>
 	</button>
 	<div class="relative">
 		<button

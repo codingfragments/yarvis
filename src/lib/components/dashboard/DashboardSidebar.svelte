@@ -82,7 +82,7 @@
 							<DealPill {deal} fallbackId={p.deal_tag} />
 							{#if p.file}
 								<button
-									class="text-[11px] text-primary hover:underline"
+									class="text-xs text-primary hover:underline"
 									onclick={() => onOpenPrep(p)}
 									title="Open prep document"
 								>open</button>

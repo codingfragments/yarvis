@@ -51,7 +51,7 @@
 		>
 			{#snippet actions()}
 				<button
-					class="btn btn-ghost btn-xs h-7 min-h-7 text-[11px] gap-1.5 normal-case"
+					class="btn btn-ghost btn-xs h-7 min-h-7 text-xs gap-1.5 normal-case"
 					class:btn-active={showOpenQuestionsOnly}
 					onclick={() => (showOpenQuestionsOnly = !showOpenQuestionsOnly)}
 					aria-pressed={showOpenQuestionsOnly}
@@ -94,7 +94,7 @@
 								<h4 class="flex-1 text-sm font-medium text-base-content leading-snug">{q.title}</h4>
 								{#if editable}
 									<button
-										class="shrink-0 btn btn-xs h-7 min-h-7 normal-case text-[11px]"
+										class="shrink-0 btn btn-xs h-7 min-h-7 normal-case text-xs"
 										class:btn-primary={q.status === 'PENDING'}
 										class:btn-ghost={q.status === 'ANSWERED'}
 										onclick={() => onEditQuestion(q)}

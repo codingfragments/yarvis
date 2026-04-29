@@ -270,7 +270,7 @@
 				<div class="flex-1 min-w-0">
 					<h2 class="text-sm font-semibold text-base-content truncate leading-tight">{title}</h2>
 					{#if subtitle}
-						<p class="text-[11px] text-base-content/50 truncate font-mono">{subtitle}</p>
+						<p class="text-xs text-base-content/50 truncate font-mono">{subtitle}</p>
 					{/if}
 				</div>
 				<button
@@ -353,7 +353,7 @@
 							Outline
 						</div>
 						{#if headings.length === 0}
-							<p class="text-[11px] text-base-content/40 italic px-2">No headings.</p>
+							<p class="text-xs text-base-content/40 italic px-2">No headings.</p>
 						{:else}
 							<ul class="flex flex-col gap-0.5">
 								{#each headings as h}

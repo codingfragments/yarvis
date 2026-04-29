@@ -46,11 +46,11 @@
 			<h2 class="text-sm font-semibold text-base-content truncate">
 				{title}
 				{#if count !== null && count !== undefined}
-					<span class="ml-1.5 text-[11px] font-mono text-base-content/40">{count}</span>
+					<span class="ml-1.5 text-xs font-mono text-base-content/40">{count}</span>
 				{/if}
 			</h2>
 			{#if subtitle}
-				<p class="text-[11px] text-base-content/50 mt-0.5 truncate">{subtitle}</p>
+				<p class="text-xs text-base-content/50 mt-0.5 truncate">{subtitle}</p>
 			{/if}
 		</div>
 		{#if actions}
