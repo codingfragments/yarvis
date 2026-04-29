@@ -7,29 +7,25 @@
 	import { readPrep } from '$lib/services/dashboard';
 	import { isTauri } from '$lib/services/tauri';
 	import type { DashboardQuestion, MeetingPrep } from '$lib/types';
-	import DealPill from '$lib/components/dashboard/DealPill.svelte';
-	import UrgencyDot from '$lib/components/dashboard/UrgencyDot.svelte';
-	import SectionCard from '$lib/components/dashboard/SectionCard.svelte';
-	import ExternalLink from '$lib/components/dashboard/ExternalLink.svelte';
 	import MarkdownViewer from '$lib/components/dashboard/MarkdownViewer.svelte';
 	import QuestionEditor from '$lib/components/dashboard/QuestionEditor.svelte';
-	import QuestionStatusPill from '$lib/components/dashboard/QuestionStatusPill.svelte';
-	import MarkdownRenderer from '$lib/components/MarkdownRenderer.svelte';
 	import DealLensBar from '$lib/components/dashboard/DealLensBar.svelte';
 	import CommandPalette from '$lib/components/dashboard/CommandPalette.svelte';
 	import DashboardHeader from '$lib/components/dashboard/DashboardHeader.svelte';
 	import DashboardSidebar from '$lib/components/dashboard/DashboardSidebar.svelte';
+	import DashboardTabStrip, { TAB_KEYS, type TabKey } from '$lib/components/dashboard/DashboardTabStrip.svelte';
+	import SummaryTab from '$lib/components/dashboard/tabs/SummaryTab.svelte';
+	import CalendarTab from '$lib/components/dashboard/tabs/CalendarTab.svelte';
+	import EmailTab from '$lib/components/dashboard/tabs/EmailTab.svelte';
+	import SlackTab from '$lib/components/dashboard/tabs/SlackTab.svelte';
+	import ResearchTab from '$lib/components/dashboard/tabs/ResearchTab.svelte';
 	import type { SearchItem } from '$lib/components/dashboard/CommandPalette.svelte';
-	import { eventClass, eventBorder } from '$lib/dashboard/format';
 	import { buildSearchItems } from '$lib/dashboard/searchIndex';
 
 	const dashboard = getDashboardStore();
 	const view = getDashboardViewStore();
 	const settings = getSettingsStore();
 	const refresh = getRefreshStore();
-
-	const TAB_KEYS = ['summary', 'calendar', 'email', 'slack', 'research'] as const;
-	type TabKey = (typeof TAB_KEYS)[number];
 
 	let tab = $state<TabKey>('summary');
 	let memoryOpen = $state(false);
@@ -42,7 +38,6 @@
 	let questionEditorOpen = $state(false);
 	let editingQuestion = $state<DashboardQuestion | null>(null);
 	let editorError = $state<string | null>(null);
-	let showOpenQuestionsOnly = $state(true);
 	let paletteOpen = $state(false);
 
 	onMount(() => {
@@ -210,375 +205,51 @@
 
 			<!-- Right pane: tabs + content (independent scroll on md+) -->
 			<div class="order-1 md:order-none md:flex-1 md:min-w-0 md:min-h-0 flex flex-col">
-				<!-- Tab strip -->
-				<nav class="shrink-0 flex gap-1 border-b border-base-content/10 -mx-1 px-1 overflow-x-auto overflow-y-hidden">
-					{#each TAB_KEYS as key}
-						{@const active = tab === key}
-						{@const count = key === 'summary' ? null : view.counts[key]}
-						<button
-							class="shrink-0 px-3 py-2 text-xs font-medium border-b-2 -mb-px transition-colors flex items-center gap-1.5 capitalize"
-							class:border-primary={active}
-							class:text-primary={active}
-							class:border-transparent={!active}
-							class:text-base-content={!active}
-							class:opacity-60={!active}
-							onclick={() => (tab = key)}
-						>
-							<span>{key}</span>
-							{#if count !== null && count !== undefined && count > 0}
-								<span
-									class="rounded-full bg-base-300/60 px-1.5 py-0.5 text-[10px] font-mono"
-									class:bg-primary={active}
-									class:text-primary-content={active}
-								>
-									{count}
-								</span>
-							{/if}
-							{#if key === 'calendar' && view.counts.conflicts > 0}
-								<span class="text-warning" title="{view.counts.conflicts} conflict{view.counts.conflicts > 1 ? 's' : ''}">⚠</span>
-							{/if}
-						</button>
-					{/each}
-				</nav>
+				<DashboardTabStrip {tab} counts={view.counts} onSelect={(k) => (tab = k)} />
 
 				<!-- Tab content -->
 				<div class="md:flex-1 md:min-w-0 md:overflow-y-auto md:min-h-0 pt-4">
 					{#if tab === 'summary'}
-						<div class="flex flex-col gap-4">
-							{#if b.greeting}
-								<section class="rounded-xl bg-gradient-to-br from-primary/10 via-base-200/40 to-secondary/10 border border-base-content/5 px-5 py-4">
-									<h2 class="text-lg font-semibold text-base-content">{b.greeting.text}</h2>
-									{#if b.greeting.context_note}
-										<div class="mt-2 rounded-lg bg-base-100/60 border border-base-content/10 px-3.5 py-2 text-sm text-base-content/80">
-											💡 {b.greeting.context_note}
-										</div>
-									{/if}
-								</section>
-							{/if}
-
-							{#if b.focus_prompt}
-								<section class="rounded-xl bg-primary/5 border-l-4 border-primary px-5 py-4">
-									<div class="text-[10px] uppercase tracking-wider text-primary/70 font-semibold mb-1.5">Today's focus</div>
-									<p class="text-sm text-base-content/80 leading-relaxed whitespace-pre-wrap">{b.focus_prompt}</p>
-								</section>
-							{/if}
-
-							{#if dashboard.questions.length > 0}
-								{@const visibleQuestions = showOpenQuestionsOnly
-									? dashboard.questions.filter((q) => q.status === 'PENDING')
-									: dashboard.questions}
-								<SectionCard
-									icon="❓"
-									title="Questions"
-									subtitle={view.counts.pending > 0
-										? `${view.counts.pending} pending of ${dashboard.questions.length}`
-										: `All ${dashboard.questions.length} answered`}
-									count={visibleQuestions.length}
-								>
-									{#snippet actions()}
-										<button
-											class="btn btn-ghost btn-xs h-7 min-h-7 text-[11px] gap-1.5 normal-case"
-											class:btn-active={showOpenQuestionsOnly}
-											onclick={() => (showOpenQuestionsOnly = !showOpenQuestionsOnly)}
-											aria-pressed={showOpenQuestionsOnly}
-											title="Toggle filter"
-										>
-											<span class="inline-block w-3 h-3 rounded-sm border border-base-content/30 flex items-center justify-center text-[10px] leading-none"
-												class:bg-primary={showOpenQuestionsOnly}
-												class:border-primary={showOpenQuestionsOnly}
-												class:text-primary-content={showOpenQuestionsOnly}
-											>
-												{showOpenQuestionsOnly ? '✓' : ''}
-											</span>
-											Open only
-										</button>
-									{/snippet}
-
-									{#if visibleQuestions.length === 0}
-										<p class="text-xs text-base-content/40 italic">
-											{showOpenQuestionsOnly
-												? 'No open questions. Toggle the filter to see answered ones.'
-												: 'No questions today.'}
-										</p>
-									{:else}
-										<ul class="flex flex-col gap-2.5">
-											{#each visibleQuestions as q (q.title)}
-												{@const editable = q.status !== 'PROCESSED'}
-												<li
-													class="group rounded-lg border bg-base-100/40 px-4 py-3 transition-colors"
-													class:border-warning={q.status === 'PENDING'}
-													class:border-opacity-30={q.status === 'PENDING'}
-													class:border-success={q.status === 'ANSWERED'}
-													class:border-opacity-25={q.status === 'ANSWERED'}
-													class:border-base-content={q.status === 'PROCESSED'}
-													class:border-opacity-10={q.status === 'PROCESSED'}
-													class:opacity-70={q.status === 'PROCESSED'}
-												>
-													<div class="flex items-start gap-2 mb-1.5">
-														<QuestionStatusPill status={q.status} />
-														<h4 class="flex-1 text-sm font-medium text-base-content leading-snug">{q.title}</h4>
-														{#if editable}
-															<button
-																class="shrink-0 btn btn-xs h-7 min-h-7 normal-case text-[11px]"
-																class:btn-primary={q.status === 'PENDING'}
-																class:btn-ghost={q.status === 'ANSWERED'}
-																onclick={() => openQuestionEditor(q)}
-															>
-																{q.status === 'PENDING' ? 'Answer' : 'Edit'}
-															</button>
-														{/if}
-													</div>
-
-													{#if q.context}
-														<p class="text-xs text-base-content/55 italic mb-1.5 leading-snug">{q.context}</p>
-													{/if}
-
-													{#if q.body}
-														<div class="text-xs text-base-content/75 leading-relaxed">
-															<MarkdownRenderer markdown={q.body} />
-														</div>
-													{/if}
-
-													{#if q.answer}
-														<div class="mt-2.5 rounded-md bg-success/5 border-l-2 border-success/50 px-3 py-2">
-															<div class="text-[10px] uppercase tracking-wider text-success/80 font-semibold mb-0.5">
-																Your answer
-															</div>
-															<p class="text-xs text-base-content/85 whitespace-pre-wrap leading-snug">{q.answer}</p>
-														</div>
-													{/if}
-
-													{#if q.asked || q.run}
-														<div class="flex items-center gap-1.5 text-[10px] text-base-content/35 font-mono mt-2">
-															{#if q.asked}<span>asked {q.asked}</span>{/if}
-															{#if q.run}<span>· run {q.run}</span>{/if}
-														</div>
-													{/if}
-												</li>
-											{/each}
-										</ul>
-									{/if}
-								</SectionCard>
-							{/if}
-
-							<footer class="text-[10px] text-base-content/40 pt-2">
-								Generated {b.meta.generated_at} · timezone {b.meta.timezone ?? '?'}
-								· run {b.meta.run_type ?? '?'} #{b.meta.update_sequence ?? 1}
-								{#if dashboard.lastLoaded}· loaded {dashboard.lastLoaded.toLocaleTimeString()}{/if}
-							</footer>
-						</div>
-
+						<SummaryTab
+							briefing={b}
+							questions={dashboard.questions}
+							pendingCount={view.counts.pending}
+							lastLoaded={dashboard.lastLoaded}
+							onEditQuestion={openQuestionEditor}
+						/>
 					{:else if tab === 'calendar' && b.calendar}
-						<div class="flex flex-col gap-3">
-							{#if b.calendar.summary && !view.lensActive}
-								<p class="text-xs text-base-content/60 italic">{b.calendar.summary}</p>
-							{/if}
-							{#if view.filteredConflicts.length > 0}
-								<div class="flex flex-col gap-2">
-									{#each view.filteredConflicts as c}
-										<div class="min-w-0 rounded-lg bg-warning/10 border border-warning/20 px-3 py-2.5">
-											<div class="flex items-center gap-2 text-xs font-medium text-warning mb-1">⚠️ Conflict at {c.time}</div>
-											<p class="text-xs text-base-content/80 break-words">{c.description}</p>
-											{#if c.action_needed}
-												<p class="text-xs font-semibold text-base-content/90 mt-1.5 break-words">→ {c.action_needed}</p>
-											{/if}
-										</div>
-									{/each}
-								</div>
-							{/if}
-							{#if view.filteredEvents.length === 0}
-								<p class="text-xs text-base-content/40 italic">
-									{view.lensActive ? `No events for ${view.lensName}.` : 'No events today.'}
-								</p>
-							{/if}
-							<ul class="flex flex-col gap-1">
-								{#each view.filteredEvents as e}
-									{@const deal = dashboard.dealById(e.deal_tag)}
-									<li
-										class="flex items-stretch gap-3 rounded-lg border-l-2 {eventBorder(e.type, e.urgency)} bg-base-100/30 px-3 py-2 text-xs {eventClass(e.type)}"
-									>
-										<div class="font-mono text-base-content/60 w-24 shrink-0 pt-0.5">{e.start}–{e.end}</div>
-										<div class="flex-1 min-w-0 flex flex-col gap-0.5">
-											<div class="flex items-center gap-1.5 flex-wrap">
-												<UrgencyDot urgency={e.urgency} />
-												<span class="font-medium text-base-content/90 truncate">{e.title}</span>
-												<DealPill {deal} fallbackId={e.deal_tag} />
-												{#if e.initiative}<span class="text-[10px] text-base-content/50">· {e.initiative}</span>{/if}
-											</div>
-											{#if e.notes}<p class="text-[11px] text-base-content/55 leading-snug break-words">{e.notes}</p>{/if}
-											{#if e.participants.length > 0}
-												<p class="text-[10px] text-base-content/40 truncate">{e.participants.join(', ')}</p>
-											{/if}
-										</div>
-										<div class="flex items-center gap-1 shrink-0">
-											{#if e.links?.zoom}<ExternalLink href={e.links.zoom} icon="📹" title="Zoom" />{/if}
-											{#if e.links?.doc}<ExternalLink href={e.links.doc} icon="📄" title="Doc" />{/if}
-											{#if e.links?.other}<ExternalLink href={e.links.other} icon="🔗" title="Link" />{/if}
-										</div>
-									</li>
-								{/each}
-							</ul>
-						</div>
-
+						<CalendarTab
+							calendar={b.calendar}
+							events={view.filteredEvents}
+							conflicts={view.filteredConflicts}
+							lensActive={view.lensActive}
+							lensName={view.lensName}
+							dealById={(id) => dashboard.dealById(id)}
+						/>
 					{:else if tab === 'email' && b.email}
-						<div class="flex flex-col gap-4">
-							{#if view.filteredEmailActToday.length === 0 && view.filteredEmailFyi.length === 0}
-								<p class="text-xs text-base-content/40 italic">
-									{view.lensActive ? `No email for ${view.lensName}.` : 'No email today.'}
-								</p>
-							{/if}
-							{#if view.filteredEmailActToday.length > 0}
-								<div>
-									<div class="text-[10px] uppercase tracking-wider text-base-content/50 font-semibold mb-2">Act today</div>
-									<ul class="flex flex-col gap-2">
-										{#each view.filteredEmailActToday as m}
-											{@const deal = dashboard.dealById(m.deal_tag)}
-											<li class="rounded-lg border-l-4 border-error/60 bg-base-100/40 px-3 py-2.5">
-												<div class="flex items-center gap-2 mb-1 flex-wrap">
-													<UrgencyDot urgency={m.urgency} />
-													<span class="text-xs font-medium text-base-content">{m.from}</span>
-													<DealPill {deal} fallbackId={m.deal_tag} />
-													{#if m.url}<ExternalLink href={m.url} label="gmail" />{/if}
-												</div>
-												<p class="text-xs text-base-content/85 mb-0.5 break-words">{m.subject}</p>
-												<p class="text-[11px] text-base-content/65 leading-snug break-words">{m.summary}</p>
-												{#if m.action}<p class="text-[11px] text-base-content/85 font-medium mt-1 break-words">→ {m.action}</p>{/if}
-											</li>
-										{/each}
-									</ul>
-								</div>
-							{/if}
-							{#if view.filteredEmailFyi.length > 0}
-								<div>
-									<div class="text-[10px] uppercase tracking-wider text-base-content/50 font-semibold mb-2">FYI</div>
-									<ul class="flex flex-col gap-1.5">
-										{#each view.filteredEmailFyi as m}
-											{@const deal = dashboard.dealById(m.deal_tag)}
-											<li class="rounded-lg border border-base-content/10 bg-base-100/20 px-3 py-2 text-xs">
-												<div class="flex items-center gap-2 mb-0.5 flex-wrap">
-													<UrgencyDot urgency={m.urgency} />
-													<span class="font-medium text-base-content/80">{m.from}</span>
-													<span class="text-base-content/50">— {m.subject}</span>
-													<DealPill {deal} fallbackId={m.deal_tag} />
-													{#if m.url}<ExternalLink href={m.url} label="gmail" />{/if}
-												</div>
-												<p class="text-[11px] text-base-content/60 leading-snug break-words">{m.summary}</p>
-												{#if m.context}<p class="text-[11px] text-base-content/50 italic mt-0.5 break-words">{m.context}</p>{/if}
-											</li>
-										{/each}
-									</ul>
-								</div>
-							{/if}
-							{#if b.email.no_action_summary && !view.lensActive}
-								<p class="text-[10px] text-base-content/40 italic border-t border-base-content/5 pt-2">
-									{b.email.no_action_summary}
-								</p>
-							{/if}
-						</div>
-
+						<EmailTab
+							email={b.email}
+							actToday={view.filteredEmailActToday}
+							fyi={view.filteredEmailFyi}
+							lensActive={view.lensActive}
+							lensName={view.lensName}
+							dealById={(id) => dashboard.dealById(id)}
+						/>
 					{:else if tab === 'slack' && b.slack}
-						<div class="flex flex-col gap-3">
-							{#if b.slack.since && !view.lensActive}
-								<p class="text-[10px] text-base-content/50">Since {b.slack.since}</p>
-							{/if}
-							{#if view.filteredChannels.length === 0}
-								<p class="text-xs text-base-content/40 italic">
-									{view.lensActive ? `No slack channels for ${view.lensName}.` : 'No slack activity.'}
-								</p>
-							{/if}
-							<ul class="flex flex-col gap-3">
-								{#each view.filteredChannels as ch}
-									{@const deal = dashboard.dealById(ch.deal_tag)}
-									<li class="rounded-lg bg-base-100/30 border border-base-content/5 p-3">
-										<div class="flex items-center gap-2 mb-2 flex-wrap">
-											<span class="text-xs font-mono font-medium text-base-content/85">{ch.channel_name}</span>
-											<DealPill {deal} fallbackId={ch.deal_tag} />
-											<span
-												class="text-[10px] uppercase tracking-wider rounded-full px-1.5 py-0.5"
-												class:bg-success={ch.activity_level === 'high'}
-												class:bg-warning={ch.activity_level === 'medium'}
-												class:bg-base-300={ch.activity_level === 'low' || ch.activity_level === 'quiet'}
-												class:text-success-content={ch.activity_level === 'high'}
-												class:text-warning-content={ch.activity_level === 'medium'}
-											>
-												{ch.activity_level}
-											</span>
-											{#if ch.url}<ExternalLink href={ch.url} label="open" />{/if}
-										</div>
-										{#if ch.messages.length === 0}
-											<p class="text-[11px] text-base-content/40">No messages.</p>
-										{:else}
-											<ul class="flex flex-col gap-1.5">
-												{#each ch.messages as msg}
-													<li class="text-[11px] border-l border-base-content/10 pl-2.5">
-														<div class="flex items-center gap-1.5 mb-0.5">
-															{#if msg.author}<span class="font-medium text-base-content/80">{msg.author}</span>{/if}
-															{#if msg.timestamp}<span class="text-base-content/40 text-[10px]">{msg.timestamp.slice(11, 16)}</span>{/if}
-														</div>
-														<p class="text-base-content/65 leading-snug break-words">{msg.summary}</p>
-														{#if msg.links.length > 0}
-															<div class="flex flex-wrap gap-1 mt-1">
-																{#each msg.links as l}<ExternalLink href={l.url} label={l.label} />{/each}
-															</div>
-														{/if}
-														{#if msg.action}<p class="text-base-content/85 font-medium mt-0.5 break-words">→ {msg.action}</p>{/if}
-													</li>
-												{/each}
-											</ul>
-										{/if}
-									</li>
-								{/each}
-							</ul>
-							{#if !view.lensActive && b.slack.dms.length > 0}
-								<div>
-									<div class="text-[10px] uppercase tracking-wider text-base-content/50 font-semibold mb-2">DMs</div>
-									<ul class="flex flex-col gap-1.5">
-										{#each b.slack.dms as dm}
-											<li class="rounded-lg bg-base-100/30 px-3 py-2 text-xs">
-												<div class="flex items-center gap-2 mb-0.5">
-													<span class="font-medium text-base-content/80">{dm.with}</span>
-													{#if dm.url}<ExternalLink href={dm.url} label="open" />{/if}
-												</div>
-												<p class="text-[11px] text-base-content/60 break-words">{dm.summary}</p>
-												{#if dm.action}<p class="text-[11px] text-base-content/85 font-medium mt-0.5 break-words">→ {dm.action}</p>{/if}
-											</li>
-										{/each}
-									</ul>
-								</div>
-							{/if}
-						</div>
-
+						<SlackTab
+							slack={b.slack}
+							channels={view.filteredChannels}
+							lensActive={view.lensActive}
+							lensName={view.lensName}
+							dealById={(id) => dashboard.dealById(id)}
+						/>
 					{:else if tab === 'research'}
-						<div class="flex flex-col gap-3">
-							{#if view.filteredIntel.length === 0}
-								<p class="text-xs text-base-content/40 italic">
-									{view.lensActive ? `No intel tagged for ${view.lensName}.` : 'No intelligence items today.'}
-								</p>
-							{/if}
-							{#each view.filteredIntel as cat}
-								{@const def = dashboard.categoryById(cat.category_id)}
-								<SectionCard
-									icon={def?.icon ?? '📰'}
-									title={def?.label ?? cat.category_id}
-									count={cat.items.length}
-									collapsible={true}
-									defaultOpen={cat.items.length <= 3}
-								>
-									<ul class="flex flex-col gap-2">
-										{#each cat.items as it}
-											<li class="rounded-lg bg-base-100/30 px-3 py-2.5">
-												<div class="flex items-start gap-2 mb-1 flex-wrap">
-													<h4 class="text-xs font-semibold text-base-content/90 flex-1 min-w-0 break-words">{it.headline}</h4>
-													{#if it.url}<ExternalLink href={it.url} label={it.source ?? 'source'} />{/if}
-												</div>
-												<p class="text-[11px] text-base-content/65 leading-snug break-words">{it.detail}</p>
-												{#if it.relevance}<p class="text-[11px] text-primary/80 italic mt-1.5 break-words">↳ {it.relevance}</p>{/if}
-											</li>
-										{/each}
-									</ul>
-								</SectionCard>
-							{/each}
-						</div>
+						<ResearchTab
+							intel={view.filteredIntel}
+							lensActive={view.lensActive}
+							lensName={view.lensName}
+							categoryById={(id) => dashboard.categoryById(id)}
+						/>
 					{:else}
 						<p class="text-xs text-base-content/40">Nothing to show.</p>
 					{/if}
