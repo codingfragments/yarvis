@@ -17,6 +17,14 @@
 	import DealLensBar from '$lib/components/dashboard/DealLensBar.svelte';
 	import CommandPalette from '$lib/components/dashboard/CommandPalette.svelte';
 	import type { SearchItem } from '$lib/components/dashboard/CommandPalette.svelte';
+	import {
+		liveMinutesAway as liveMinutesAwayFn,
+		fmtMinutesAway,
+		staleness as stalenessFn,
+		eventClass,
+		eventBorder,
+		priorityRank
+	} from '$lib/dashboard/format';
 
 	const dashboard = getDashboardStore();
 	const settings = getSettingsStore();
@@ -135,54 +143,11 @@
 	}
 
 	function liveMinutesAway(startsAt: string | null | undefined): number | null {
-		if (!startsAt) return null;
-		const t = Date.parse(startsAt);
-		if (Number.isNaN(t)) return null;
-		return Math.round((t - now.getTime()) / 60000);
+		return liveMinutesAwayFn(startsAt, now.getTime());
 	}
 
-	function staleness(generatedAt: string | null | undefined): { label: string; tone: 'fresh' | 'aging' | 'stale' } {
-		if (!generatedAt) return { label: '—', tone: 'stale' };
-		const ageMs = now.getTime() - Date.parse(generatedAt);
-		if (Number.isNaN(ageMs)) return { label: '—', tone: 'stale' };
-		const mins = Math.max(0, Math.round(ageMs / 60000));
-		if (mins < 30) return { label: `${mins}m`, tone: 'fresh' };
-		if (mins < 240) {
-			const h = Math.floor(mins / 60);
-			const m = mins % 60;
-			return { label: `${h}h ${m}m`, tone: 'aging' };
-		}
-		const h = Math.round(mins / 60);
-		return { label: `${h}h`, tone: 'stale' };
-	}
-
-	function fmtMinutesAway(m: number | null): string {
-		if (m === null) return '';
-		if (m <= 0) return 'now';
-		if (m < 60) return `${m}m`;
-		const h = Math.floor(m / 60);
-		const mm = m % 60;
-		return mm === 0 ? `${h}h` : `${h}h ${mm}m`;
-	}
-
-	function eventClass(type: string): string {
-		if (type === 'declined') return 'opacity-50 line-through';
-		if (type === 'personal_block' || type === 'personal') return 'opacity-70';
-		return '';
-	}
-
-	function eventBorder(type: string, urgency: string): string {
-		if (type === 'declined') return 'border-l-base-content/20';
-		if (type === 'personal_block' || type === 'personal') return 'border-l-base-content/20';
-		if (type === 'external' && (urgency === 'critical' || urgency === 'high')) return 'border-l-error';
-		if (type === 'external') return 'border-l-warning';
-		if (type === 'internal' && urgency === 'critical') return 'border-l-warning';
-		if (type === 'internal') return 'border-l-success';
-		return 'border-l-base-content/20';
-	}
-
-	function priorityRank(p: string): number {
-		return p === 'critical' ? 0 : p === 'high' ? 1 : p === 'medium' ? 2 : 3;
+	function staleness(generatedAt: string | null | undefined) {
+		return stalenessFn(generatedAt, now.getTime());
 	}
 
 	// ── Deal-lens filtering ─────────────────────────────────────────────────
