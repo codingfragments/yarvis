@@ -417,14 +417,6 @@
 			🔎
 			<kbd class="text-[9px] font-mono px-1 py-0.5 bg-base-300/50 rounded border border-base-content/10">⌘K</kbd>
 		</button>
-		<button
-			class="btn btn-primary btn-sm text-xs"
-			onclick={load}
-			disabled={dashboard.loading}
-			title="Re-read daily.json"
-		>
-			{dashboard.loading ? '…' : '↻'}
-		</button>
 		<div class="relative">
 			<button
 				class="btn btn-ghost btn-sm text-xs"
@@ -957,7 +949,7 @@
 		</div>
 	{:else if !dashboard.error && !dashboard.loading}
 		<div class="rounded-xl bg-base-200/40 border border-base-content/5 px-6 py-10 text-center mt-3">
-			<p class="text-sm text-base-content/60">No daily.json yet — run the briefing skill, then click ↻.</p>
+			<p class="text-sm text-base-content/60">No daily.json yet — run the briefing skill; auto-refresh will pick it up.</p>
 		</div>
 	{:else if dashboard.loading}
 		<div class="flex justify-center py-12">
