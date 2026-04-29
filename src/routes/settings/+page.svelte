@@ -3,6 +3,10 @@
 	import { getSystemStore } from '$lib/stores/system.svelte';
 	import { getLearningStore } from '$lib/stores/learning.svelte';
 	import { onMount } from 'svelte';
+	import SettingsSection from '$lib/components/settings/SettingsSection.svelte';
+	import SettingsTextField from '$lib/components/settings/SettingsTextField.svelte';
+	import SettingsToggleField from '$lib/components/settings/SettingsToggleField.svelte';
+	import SettingsRangeField from '$lib/components/settings/SettingsRangeField.svelte';
 
 	const settings = getSettingsStore();
 	const system = getSystemStore();
@@ -70,10 +74,7 @@
 		<h1 class="text-lg font-semibold text-base-content">Settings</h1>
 	</div>
 
-	<!-- Appearance -->
-	<section class="rounded-xl bg-base-200/40 border border-base-content/5 p-5 flex flex-col gap-4">
-		<h2 class="text-xs font-semibold uppercase tracking-wider text-base-content/50">Appearance</h2>
-
+	<SettingsSection title="Appearance">
 		<div class="form-control">
 			<label class="label" for="theme-select">
 				<span class="label-text">Theme</span>
@@ -107,64 +108,35 @@
 			</div>
 		</div>
 
-		<div class="form-control">
-			<label class="label cursor-pointer justify-start gap-3">
-				<input
-					type="checkbox"
-					class="toggle toggle-primary toggle-sm"
-					checked={settings.current.pixel_font_headings}
-					onchange={(e) => settings.update({ pixel_font_headings: e.currentTarget.checked })}
-				/>
-				<span class="label-text">Retro pixel font accents</span>
-			</label>
-		</div>
+		<SettingsToggleField
+			label="Retro pixel font accents"
+			checked={settings.current.pixel_font_headings}
+			onChange={(v) => settings.update({ pixel_font_headings: v })}
+		/>
 
-		<div class="form-control">
-			<label class="label" for="opacity-slider">
-				<span class="label-text">Window Opacity</span>
-				<span class="label-text-alt text-base-content/40">{Math.round(settings.current.window_opacity * 100)}%</span>
-			</label>
-			<input
-				id="opacity-slider"
-				type="range"
-				min="0.5"
-				max="1"
-				step="0.05"
-				value={settings.current.window_opacity}
-				oninput={(e) => settings.update({ window_opacity: parseFloat(e.currentTarget.value) })}
-				class="range range-primary range-xs"
-			/>
-		</div>
-	</section>
+		<SettingsRangeField
+			label="Window Opacity"
+			display={`${Math.round(settings.current.window_opacity * 100)}%`}
+			value={settings.current.window_opacity}
+			min={0.5}
+			max={1}
+			step={0.05}
+			onChange={(v) => settings.update({ window_opacity: v })}
+		/>
+	</SettingsSection>
 
-	<!-- System -->
-	<section class="rounded-xl bg-base-200/40 border border-base-content/5 p-5 flex flex-col gap-4">
-		<h2 class="text-xs font-semibold uppercase tracking-wider text-base-content/50">System</h2>
+	<SettingsSection title="System">
+		<SettingsTextField
+			label="Python Path"
+			value={settings.current.python_path}
+			onChange={(v) => settings.update({ python_path: v })}
+		/>
 
-		<div class="form-control">
-			<label class="label" for="python-path">
-				<span class="label-text">Python Path</span>
-			</label>
-			<input
-				id="python-path"
-				type="text"
-				class="input input-bordered input-sm w-full font-mono text-sm"
-				value={settings.current.python_path}
-				oninput={(e) => settings.update({ python_path: e.currentTarget.value })}
-			/>
-		</div>
-
-		<div class="form-control">
-			<label class="label cursor-pointer justify-start gap-3">
-				<input
-					type="checkbox"
-					class="toggle toggle-primary toggle-sm"
-					checked={settings.current.launch_at_startup}
-					onchange={(e) => settings.update({ launch_at_startup: e.currentTarget.checked })}
-				/>
-				<span class="label-text">Launch at startup</span>
-			</label>
-		</div>
+		<SettingsToggleField
+			label="Launch at startup"
+			checked={settings.current.launch_at_startup}
+			onChange={(v) => settings.update({ launch_at_startup: v })}
+		/>
 
 		<div class="form-control">
 			<span class="label">
@@ -174,137 +146,79 @@
 				{settings.current.data_directory}
 			</div>
 		</div>
-	</section>
+	</SettingsSection>
 
-	<!-- Dashboard -->
-	<section class="rounded-xl bg-base-200/40 border border-base-content/5 p-5 flex flex-col gap-4">
-		<h2 class="text-xs font-semibold uppercase tracking-wider text-base-content/50">Dashboard</h2>
+	<SettingsSection title="Dashboard">
+		<SettingsTextField
+			label="Daily Briefing Directory"
+			value={settings.current.daily_dir}
+			onChange={(v) => settings.update({ daily_dir: v })}
+		>
+			{#snippet hint()}
+				Folder containing <code>daily.json</code>, <code>question.md</code>, <code>memory.md</code>
+			{/snippet}
+		</SettingsTextField>
 
-		<div class="form-control">
-			<label class="label" for="daily-dir">
-				<span class="label-text">Daily Briefing Directory</span>
-			</label>
-			<input
-				id="daily-dir"
-				type="text"
-				class="input input-bordered input-sm w-full font-mono text-sm"
-				value={settings.current.daily_dir}
-				oninput={(e) => settings.update({ daily_dir: e.currentTarget.value })}
-			/>
-			<label class="label" for="daily-dir">
-				<span class="label-text-alt text-base-content/30">Folder containing <code>daily.json</code>, <code>question.md</code>, <code>memory.md</code></span>
-			</label>
-		</div>
+		<SettingsTextField
+			label="Briefing Config Directory"
+			value={settings.current.daily_src_dir}
+			onChange={(v) => settings.update({ daily_src_dir: v })}
+		>
+			{#snippet hint()}
+				Folder containing <code>briefing_config.yaml</code> (intelligence categories, deal colours)
+			{/snippet}
+		</SettingsTextField>
+	</SettingsSection>
 
-		<div class="form-control">
-			<label class="label" for="daily-src-dir">
-				<span class="label-text">Briefing Config Directory</span>
-			</label>
-			<input
-				id="daily-src-dir"
-				type="text"
-				class="input input-bordered input-sm w-full font-mono text-sm"
-				value={settings.current.daily_src_dir}
-				oninput={(e) => settings.update({ daily_src_dir: e.currentTarget.value })}
-			/>
-			<label class="label" for="daily-src-dir">
-				<span class="label-text-alt text-base-content/30">Folder containing <code>briefing_config.yaml</code> (intelligence categories, deal colours)</span>
-			</label>
-		</div>
-	</section>
+	<SettingsSection title="Auto-refresh">
+		<SettingsToggleField
+			label="Refresh data automatically"
+			checked={settings.current.auto_refresh_enabled}
+			onChange={(v) => settings.update({ auto_refresh_enabled: v })}
+		>
+			{#snippet hint()}
+				Pulls new and updated data without changing the page or losing focus.
+			{/snippet}
+		</SettingsToggleField>
 
-	<!-- Auto-refresh -->
-	<section class="rounded-xl bg-base-200/40 border border-base-content/5 p-5 flex flex-col gap-4">
-		<h2 class="text-xs font-semibold uppercase tracking-wider text-base-content/50">Auto-refresh</h2>
+		<SettingsRangeField
+			label="Refresh every"
+			display={`${settings.current.auto_refresh_interval_minutes} min`}
+			value={settings.current.auto_refresh_interval_minutes}
+			min={1}
+			max={60}
+			disabled={!settings.current.auto_refresh_enabled}
+			onChange={(v) => settings.update({ auto_refresh_interval_minutes: v })}
+		/>
+	</SettingsSection>
 
-		<div class="form-control">
-			<label class="label cursor-pointer justify-start gap-3">
-				<input
-					type="checkbox"
-					class="toggle toggle-primary toggle-sm"
-					checked={settings.current.auto_refresh_enabled}
-					onchange={(e) => settings.update({ auto_refresh_enabled: e.currentTarget.checked })}
-				/>
-				<span class="label-text">Refresh data automatically</span>
-			</label>
-			<div class="label pt-0">
-				<span class="label-text-alt text-base-content/30">Pulls new and updated data without changing the page or losing focus.</span>
-			</div>
-		</div>
+	<SettingsSection title="Briefings">
+		<SettingsTextField
+			label="Briefings Directory"
+			value={settings.current.briefings_dir}
+			onChange={(v) => settings.update({ briefings_dir: v })}
+		/>
 
-		<div class="form-control" class:opacity-40={!settings.current.auto_refresh_enabled}>
-			<label class="label" for="refresh-interval">
-				<span class="label-text">Refresh every</span>
-				<span class="label-text-alt text-base-content/40">{settings.current.auto_refresh_interval_minutes} min</span>
-			</label>
-			<input
-				id="refresh-interval"
-				type="range"
-				min="1"
-				max="60"
-				step="1"
-				value={settings.current.auto_refresh_interval_minutes}
-				disabled={!settings.current.auto_refresh_enabled}
-				oninput={(e) => settings.update({ auto_refresh_interval_minutes: parseInt(e.currentTarget.value) })}
-				class="range range-primary range-xs"
-			/>
-		</div>
-	</section>
+		<SettingsRangeField
+			label="Max Days to Show"
+			display={`${settings.current.briefings_max_days} days`}
+			value={settings.current.briefings_max_days}
+			min={1}
+			max={30}
+			onChange={(v) => settings.update({ briefings_max_days: v })}
+		/>
+	</SettingsSection>
 
-	<!-- Briefings -->
-	<section class="rounded-xl bg-base-200/40 border border-base-content/5 p-5 flex flex-col gap-4">
-		<h2 class="text-xs font-semibold uppercase tracking-wider text-base-content/50">Briefings</h2>
-
-		<div class="form-control">
-			<label class="label" for="briefings-dir">
-				<span class="label-text">Briefings Directory</span>
-			</label>
-			<input
-				id="briefings-dir"
-				type="text"
-				class="input input-bordered input-sm w-full font-mono text-sm"
-				value={settings.current.briefings_dir}
-				oninput={(e) => settings.update({ briefings_dir: e.currentTarget.value })}
-			/>
-		</div>
-
-		<div class="form-control">
-			<label class="label" for="briefings-max-days">
-				<span class="label-text">Max Days to Show</span>
-				<span class="label-text-alt text-base-content/40">{settings.current.briefings_max_days} days</span>
-			</label>
-			<input
-				id="briefings-max-days"
-				type="range"
-				min="1"
-				max="30"
-				step="1"
-				value={settings.current.briefings_max_days}
-				oninput={(e) => settings.update({ briefings_max_days: parseInt(e.currentTarget.value) })}
-				class="range range-primary range-xs"
-			/>
-		</div>
-	</section>
-
-	<!-- Learning -->
-	<section class="rounded-xl bg-base-200/40 border border-base-content/5 p-5 flex flex-col gap-4">
-		<h2 class="text-xs font-semibold uppercase tracking-wider text-base-content/50">Learning</h2>
-
-		<div class="form-control">
-			<label class="label" for="learning-dir">
-				<span class="label-text">Learning Courses Directory</span>
-			</label>
-			<input
-				id="learning-dir"
-				type="text"
-				class="input input-bordered input-sm w-full font-mono text-sm"
-				value={settings.current.learning_dir}
-				oninput={(e) => settings.update({ learning_dir: e.currentTarget.value })}
-			/>
-			<label class="label" for="learning-dir">
-				<span class="label-text-alt text-base-content/30">Directory containing *-curriculum.md files</span>
-			</label>
-		</div>
+	<SettingsSection title="Learning">
+		<SettingsTextField
+			label="Learning Courses Directory"
+			value={settings.current.learning_dir}
+			onChange={(v) => settings.update({ learning_dir: v })}
+		>
+			{#snippet hint()}
+				Directory containing *-curriculum.md files
+			{/snippet}
+		</SettingsTextField>
 
 		<!-- Course progress list -->
 		{#if learning.courses.length > 0}
@@ -340,7 +254,7 @@
 		>
 			Reset All XP
 		</button>
-	</section>
+	</SettingsSection>
 
 	<!-- Reset confirmation dialog -->
 	{#if resetConfirm}
@@ -362,10 +276,8 @@
 		</div>
 	{/if}
 
-	<!-- System Status -->
-	<section class="rounded-xl bg-base-200/40 border border-base-content/5 p-5">
-		<div class="flex items-center justify-between mb-4">
-			<h2 class="text-xs font-semibold uppercase tracking-wider text-base-content/50">System Status</h2>
+	<SettingsSection title="System Status">
+		{#snippet actions()}
 			<button
 				class="btn btn-ghost btn-xs text-[11px]"
 				onclick={() => system.load(settings.current.python_path)}
@@ -373,7 +285,7 @@
 			>
 				{system.current.loading ? '...' : 'Refresh'}
 			</button>
-		</div>
+		{/snippet}
 
 		{#if system.current.loading}
 			<div class="flex justify-center py-4">
@@ -413,7 +325,7 @@
 				</div>
 			</div>
 		{/if}
-	</section>
+	</SettingsSection>
 
 	<!-- Action buttons -->
 	<div class="flex items-center gap-3">
