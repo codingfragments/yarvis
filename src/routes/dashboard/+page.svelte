@@ -569,7 +569,7 @@
 			<!-- Right pane: tabs + content (independent scroll on md+) -->
 			<div class="order-1 md:order-none md:flex-1 md:min-w-0 md:min-h-0 flex flex-col">
 				<!-- Tab strip -->
-				<nav class="shrink-0 flex gap-1 border-b border-base-content/10 -mx-1 px-1 overflow-x-auto">
+				<nav class="shrink-0 flex gap-1 border-b border-base-content/10 -mx-1 px-1 overflow-x-auto overflow-y-hidden">
 					{#each TAB_KEYS as key}
 						{@const active = tab === key}
 						{@const count = key === 'summary' ? null : counts[key]}
