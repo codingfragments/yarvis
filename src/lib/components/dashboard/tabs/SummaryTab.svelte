@@ -35,7 +35,7 @@
 
 	{#if briefing.focus_prompt}
 		<section class="rounded-xl bg-primary/5 border-l-4 border-primary px-5 py-4">
-			<div class="text-[10px] uppercase tracking-wider text-primary/70 font-semibold mb-1.5">Today's focus</div>
+			<div class="text-xs uppercase tracking-wider text-primary/70 font-semibold mb-1.5">Today's focus</div>
 			<p class="text-sm text-base-content/80 leading-relaxed whitespace-pre-wrap">{briefing.focus_prompt}</p>
 		</section>
 	{/if}
@@ -58,7 +58,7 @@
 					title="Toggle filter"
 				>
 					<span
-						class="inline-block w-3 h-3 rounded-sm border border-base-content/30 flex items-center justify-center text-[10px] leading-none"
+						class="inline-block w-3 h-3 rounded-sm border border-base-content/30 flex items-center justify-center text-xs leading-none"
 						class:bg-primary={showOpenQuestionsOnly}
 						class:border-primary={showOpenQuestionsOnly}
 						class:text-primary-content={showOpenQuestionsOnly}
@@ -116,7 +116,7 @@
 
 							{#if q.answer}
 								<div class="mt-2.5 rounded-md bg-success/5 border-l-2 border-success/50 px-3 py-2">
-									<div class="text-[10px] uppercase tracking-wider text-success/80 font-semibold mb-0.5">
+									<div class="text-xs uppercase tracking-wider text-success/80 font-semibold mb-0.5">
 										Your answer
 									</div>
 									<p class="text-xs text-base-content/85 whitespace-pre-wrap leading-snug">{q.answer}</p>
@@ -124,7 +124,7 @@
 							{/if}
 
 							{#if q.asked || q.run}
-								<div class="flex items-center gap-1.5 text-[10px] text-base-content/35 font-mono mt-2">
+								<div class="flex items-center gap-1.5 text-xs text-base-content/35 font-mono mt-2">
 									{#if q.asked}<span>asked {q.asked}</span>{/if}
 									{#if q.run}<span>· run {q.run}</span>{/if}
 								</div>
@@ -136,7 +136,7 @@
 		</SectionCard>
 	{/if}
 
-	<footer class="text-[10px] text-base-content/40 pt-2">
+	<footer class="text-xs text-base-content/40 pt-2">
 		Generated {briefing.meta.generated_at} · timezone {briefing.meta.timezone ?? '?'}
 		· run {briefing.meta.run_type ?? '?'} #{briefing.meta.update_sequence ?? 1}
 		{#if lastLoaded}· loaded {lastLoaded.toLocaleTimeString()}{/if}

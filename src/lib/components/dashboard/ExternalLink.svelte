@@ -48,7 +48,7 @@
 			onclick={open}
 		>
 			{#if label}<span>{label}</span>{/if}
-			<span class="text-[10px] opacity-60">{icon}</span>
+			<span class="text-xs opacity-60">{icon}</span>
 		</a>
 	{/if}
 {/if}

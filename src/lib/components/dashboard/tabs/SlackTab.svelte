@@ -16,7 +16,7 @@
 
 <div class="flex flex-col gap-3">
 	{#if slack.since && !lensActive}
-		<p class="text-[10px] text-base-content/50">Since {slack.since}</p>
+		<p class="text-xs text-base-content/50">Since {slack.since}</p>
 	{/if}
 	{#if channels.length === 0}
 		<p class="text-xs text-base-content/40 italic">
@@ -31,7 +31,7 @@
 					<span class="text-xs font-mono font-medium text-base-content/85">{ch.channel_name}</span>
 					<DealPill {deal} fallbackId={ch.deal_tag} />
 					<span
-						class="text-[10px] uppercase tracking-wider rounded-full px-1.5 py-0.5"
+						class="text-xs uppercase tracking-wider rounded-full px-1.5 py-0.5"
 						class:bg-success={ch.activity_level === 'high'}
 						class:bg-warning={ch.activity_level === 'medium'}
 						class:bg-base-300={ch.activity_level === 'low' || ch.activity_level === 'quiet'}
@@ -50,7 +50,7 @@
 							<li class="text-xs border-l border-base-content/10 pl-2.5">
 								<div class="flex items-center gap-1.5 mb-0.5">
 									{#if msg.author}<span class="font-medium text-base-content/80">{msg.author}</span>{/if}
-									{#if msg.timestamp}<span class="text-base-content/40 text-[10px]">{msg.timestamp.slice(11, 16)}</span>{/if}
+									{#if msg.timestamp}<span class="text-base-content/40 text-xs">{msg.timestamp.slice(11, 16)}</span>{/if}
 								</div>
 								<p class="text-base-content/65 leading-snug break-words">{msg.summary}</p>
 								{#if msg.links.length > 0}
@@ -68,7 +68,7 @@
 	</ul>
 	{#if !lensActive && slack.dms.length > 0}
 		<div>
-			<div class="text-[10px] uppercase tracking-wider text-base-content/50 font-semibold mb-2">DMs</div>
+			<div class="text-xs uppercase tracking-wider text-base-content/50 font-semibold mb-2">DMs</div>
 			<ul class="flex flex-col gap-1.5">
 				{#each slack.dms as dm}
 					<li class="rounded-lg bg-base-100/30 px-3 py-2 text-xs">

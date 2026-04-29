@@ -12,7 +12,7 @@
 
 {#if deals.length > 0}
 	<div class="flex items-center gap-1.5 flex-wrap py-2 border-b border-base-content/5">
-		<span class="text-[10px] uppercase tracking-wider text-base-content/40 font-semibold mr-1">
+		<span class="text-xs uppercase tracking-wider text-base-content/40 font-semibold mr-1">
 			Lens:
 		</span>
 		<button

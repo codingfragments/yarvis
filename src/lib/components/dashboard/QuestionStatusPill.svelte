@@ -19,7 +19,7 @@
 		}
 	});
 
-	const sizeClass = $derived(size === 'md' ? 'text-xs px-2 py-0.5' : 'text-[10px] px-1.5 py-0.5');
+	const sizeClass = $derived(size === 'md' ? 'text-xs px-2 py-0.5' : 'text-xs px-1.5 py-0.5');
 </script>
 
 <span

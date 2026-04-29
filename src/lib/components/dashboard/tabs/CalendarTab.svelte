@@ -54,11 +54,11 @@
 						<UrgencyDot urgency={e.urgency} />
 						<span class="font-medium text-base-content/90 truncate">{e.title}</span>
 						<DealPill {deal} fallbackId={e.deal_tag} />
-						{#if e.initiative}<span class="text-[10px] text-base-content/50">· {e.initiative}</span>{/if}
+						{#if e.initiative}<span class="text-xs text-base-content/50">· {e.initiative}</span>{/if}
 					</div>
 					{#if e.notes}<p class="text-xs text-base-content/55 leading-snug break-words">{e.notes}</p>{/if}
 					{#if e.participants.length > 0}
-						<p class="text-[10px] text-base-content/40 truncate">{e.participants.join(', ')}</p>
+						<p class="text-xs text-base-content/40 truncate">{e.participants.join(', ')}</p>
 					{/if}
 				</div>
 				<div class="flex items-center gap-1 shrink-0">

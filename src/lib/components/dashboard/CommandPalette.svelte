@@ -110,7 +110,7 @@
 					class="flex-1 bg-transparent outline-none text-sm text-base-content placeholder:text-base-content/40"
 					placeholder="Search today's actions, email, slack, events…"
 				/>
-				<span class="text-[10px] text-base-content/30 font-mono">esc</span>
+				<span class="text-xs text-base-content/30 font-mono">esc</span>
 			</div>
 
 			<div class="flex-1 min-h-0 overflow-y-auto">
@@ -135,7 +135,7 @@
 									<div class="flex-1 min-w-0">
 										<div class="flex items-center gap-2">
 											<span class="text-sm text-base-content truncate font-medium">{r.title}</span>
-											<span class="text-[10px] uppercase tracking-wider {meta.tone} font-mono shrink-0">
+											<span class="text-xs uppercase tracking-wider {meta.tone} font-mono shrink-0">
 												{meta.label}
 											</span>
 										</div>
@@ -152,7 +152,7 @@
 				{/if}
 			</div>
 
-			<footer class="px-4 py-2 border-t border-base-content/10 shrink-0 flex items-center justify-between text-[10px] text-base-content/40 font-mono">
+			<footer class="px-4 py-2 border-t border-base-content/10 shrink-0 flex items-center justify-between text-xs text-base-content/40 font-mono">
 				<span>↑↓ move · ⏎ open · esc close</span>
 				<span>{results.length} {results.length === 1 ? 'match' : 'matches'}</span>
 			</footer>

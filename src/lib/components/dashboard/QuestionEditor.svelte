@@ -62,10 +62,10 @@
 				<div class="flex items-center gap-2 mb-1.5 flex-wrap">
 					<QuestionStatusPill status={question.status} size="md" />
 					{#if question.asked}
-						<span class="text-[10px] font-mono text-base-content/40">asked {question.asked}</span>
+						<span class="text-xs font-mono text-base-content/40">asked {question.asked}</span>
 					{/if}
 					{#if question.run}
-						<span class="text-[10px] font-mono text-base-content/40">· run {question.run}</span>
+						<span class="text-xs font-mono text-base-content/40">· run {question.run}</span>
 					{/if}
 				</div>
 				<h2 class="text-base font-semibold text-base-content leading-snug">{question.title}</h2>
@@ -74,7 +74,7 @@
 			<div class="flex-1 min-h-0 overflow-y-auto px-5 py-4 flex flex-col gap-3">
 				{#if question.context}
 					<div class="rounded-lg bg-base-200/50 border-l-2 border-info/40 px-3 py-2">
-						<div class="text-[10px] uppercase tracking-wider text-info/80 font-semibold mb-0.5">
+						<div class="text-xs uppercase tracking-wider text-info/80 font-semibold mb-0.5">
 							Context
 						</div>
 						<p class="text-xs text-base-content/75 leading-snug">{question.context}</p>
@@ -88,7 +88,7 @@
 				{/if}
 
 				<label class="form-control">
-					<span class="label-text text-[10px] uppercase tracking-wider text-base-content/50 font-semibold mb-1.5">
+					<span class="label-text text-xs uppercase tracking-wider text-base-content/50 font-semibold mb-1.5">
 						Your answer
 					</span>
 					<textarea
@@ -98,7 +98,7 @@
 						placeholder="Type your answer…"
 						disabled={saving}
 					></textarea>
-					<span class="label-text-alt text-[10px] text-base-content/40 mt-1">
+					<span class="label-text-alt text-xs text-base-content/40 mt-1">
 						Markdown supported · ⌘/Ctrl + Enter to save · Esc to cancel · empty answer reverts to pending
 					</span>
 				</label>

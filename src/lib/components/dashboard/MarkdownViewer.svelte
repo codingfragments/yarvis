@@ -312,7 +312,7 @@
 						class="flex-1 bg-transparent outline-none text-sm placeholder:text-base-content/40"
 						placeholder="Search in document (≥{MIN_QUERY_LENGTH} chars)…"
 					/>
-					<span class="text-[10px] font-mono text-base-content/50 shrink-0 w-16 text-right">
+					<span class="text-xs font-mono text-base-content/50 shrink-0 w-16 text-right">
 						{#if searching}
 							…
 						{:else if tooShort}
@@ -349,7 +349,7 @@
 			<div class="flex-1 min-h-0 flex overflow-hidden">
 				{#if navOpen}
 					<aside class="w-60 shrink-0 border-r border-base-content/10 overflow-y-auto py-3 px-2 bg-base-200/20">
-						<div class="text-[10px] uppercase tracking-wider text-base-content/40 font-semibold px-2 mb-2">
+						<div class="text-xs uppercase tracking-wider text-base-content/40 font-semibold px-2 mb-2">
 							Outline
 						</div>
 						{#if headings.length === 0}

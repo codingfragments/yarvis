@@ -49,7 +49,7 @@
 								<UrgencyDot urgency={a.priority} size="md" />
 								<p class="flex-1 min-w-0 text-xs text-base-content/85 leading-snug break-words">{a.text}</p>
 							</div>
-							<div class="flex items-center gap-1.5 flex-wrap text-[10px] text-base-content/50">
+							<div class="flex items-center gap-1.5 flex-wrap text-xs text-base-content/50">
 								{#if a.deadline}<span class="font-mono">⏰ {a.deadline}</span>{/if}
 								{#if a.source_type}<span class="opacity-60">· {a.source_type}</span>{/if}
 								<DealPill {deal} fallbackId={a.deal_tag} />
@@ -100,7 +100,7 @@
 			onclick={() => (funShowJoke = !funShowJoke)}
 			title="Click to flip"
 		>
-			<div class="text-[10px] uppercase tracking-wider text-base-content/50 mb-1">
+			<div class="text-xs uppercase tracking-wider text-base-content/50 mb-1">
 				{funShowJoke ? '😄 Joke' : '✨ Fun fact'}
 			</div>
 			<p class="text-xs text-base-content/80 leading-relaxed line-clamp-4">

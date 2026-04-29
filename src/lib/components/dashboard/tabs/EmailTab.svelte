@@ -24,7 +24,7 @@
 	{/if}
 	{#if actToday.length > 0}
 		<div>
-			<div class="text-[10px] uppercase tracking-wider text-base-content/50 font-semibold mb-2">Act today</div>
+			<div class="text-xs uppercase tracking-wider text-base-content/50 font-semibold mb-2">Act today</div>
 			<ul class="flex flex-col gap-2">
 				{#each actToday as m}
 					{@const deal = dealById(m.deal_tag)}
@@ -45,7 +45,7 @@
 	{/if}
 	{#if fyi.length > 0}
 		<div>
-			<div class="text-[10px] uppercase tracking-wider text-base-content/50 font-semibold mb-2">FYI</div>
+			<div class="text-xs uppercase tracking-wider text-base-content/50 font-semibold mb-2">FYI</div>
 			<ul class="flex flex-col gap-1.5">
 				{#each fyi as m}
 					{@const deal = dealById(m.deal_tag)}
@@ -65,7 +65,7 @@
 		</div>
 	{/if}
 	{#if email.no_action_summary && !lensActive}
-		<p class="text-[10px] text-base-content/40 italic border-t border-base-content/5 pt-2">
+		<p class="text-xs text-base-content/40 italic border-t border-base-content/5 pt-2">
 			{email.no_action_summary}
 		</p>
 	{/if}

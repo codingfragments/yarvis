@@ -14,7 +14,7 @@
 
 {#if label}
 	<span
-		class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider"
+		class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium uppercase tracking-wider"
 		style:background-color={color ? `${color}33` : 'oklch(var(--b3))'}
 		style:color={color ?? 'oklch(var(--bc) / 0.7)'}
 		style:border={color ? `1px solid ${color}55` : '1px solid oklch(var(--b3))'}
