@@ -5,7 +5,7 @@
 	import { getSettingsStore } from '$lib/stores/settings.svelte';
 	import { getRefreshStore } from '$lib/stores/refresh.svelte';
 	import { readPrep } from '$lib/services/dashboard';
-	import { isTauri } from '$lib/services/tauri';
+	import { openUrl } from '$lib/services/tauri';
 	import type { DashboardQuestion, MeetingPrep } from '$lib/types';
 	import MarkdownViewer from '$lib/components/dashboard/MarkdownViewer.svelte';
 	import QuestionEditor from '$lib/components/dashboard/QuestionEditor.svelte';
@@ -135,14 +135,7 @@
 			if (prep) await openPrep(prep);
 			return;
 		}
-		if (item.url) {
-			if (isTauri()) {
-				const { open } = await import('@tauri-apps/plugin-shell');
-				await open(item.url);
-			} else {
-				window.open(item.url, '_blank', 'noopener');
-			}
-		}
+		await openUrl(item.url);
 	}
 </script>
 

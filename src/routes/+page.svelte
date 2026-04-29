@@ -3,7 +3,7 @@
 	import { getSettingsStore } from '$lib/stores/settings.svelte';
 	import { getRefreshStore } from '$lib/stores/refresh.svelte';
 	import { readDaily, getDailyStatus } from '$lib/services/dashboard';
-	import { isTauri } from '$lib/services/tauri';
+	import { isTauri, openUrl } from '$lib/services/tauri';
 	import { onMount } from 'svelte';
 	import type { ActionItem, DailyBriefing } from '$lib/types';
 
@@ -118,15 +118,6 @@
 			.slice(0, 3);
 	});
 
-	async function openUrl(url: string | null | undefined) {
-		if (!url) return;
-		if (isTauri()) {
-			const { open } = await import('@tauri-apps/plugin-shell');
-			await open(url);
-		} else {
-			window.open(url, '_blank', 'noopener');
-		}
-	}
 </script>
 
 <div class="flex flex-col items-center min-h-[calc(100vh-6rem)] gap-6 px-4 py-6">
