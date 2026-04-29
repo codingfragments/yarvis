@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { getDashboardStore } from '$lib/stores/dashboard.svelte';
+	import { getDashboardViewStore } from '$lib/stores/dashboardView.svelte';
 	import { getSettingsStore } from '$lib/stores/settings.svelte';
 	import { getRefreshStore } from '$lib/stores/refresh.svelte';
 	import { readPrep } from '$lib/services/dashboard';
@@ -27,6 +28,7 @@
 	} from '$lib/dashboard/format';
 
 	const dashboard = getDashboardStore();
+	const view = getDashboardViewStore();
 	const settings = getSettingsStore();
 	const refresh = getRefreshStore();
 
@@ -49,7 +51,6 @@
 	let editingQuestion = $state<DashboardQuestion | null>(null);
 	let editorError = $state<string | null>(null);
 	let showOpenQuestionsOnly = $state(true);
-	let dealLens = $state<string | null>(null);
 	let paletteOpen = $state(false);
 
 	onMount(() => {
@@ -150,84 +151,12 @@
 		return stalenessFn(generatedAt, now.getTime());
 	}
 
-	// ── Deal-lens filtering ─────────────────────────────────────────────────
-	const lensActive = $derived(dealLens !== null);
-	const lensDeal = $derived(lensActive ? dashboard.dealById(dealLens) : null);
-	const lensName = $derived(lensDeal?.name ?? dealLens);
-
-	function tagsMatchDeal(tags: string[] | null | undefined, dealId: string): boolean {
-		if (!tags) return false;
-		const id = dealId.toLowerCase();
-		return tags.some((t) => t.toLowerCase() === id);
-	}
-
-	const filteredActions = $derived.by(() => {
-		const all = dashboard.briefing?.action_items ?? [];
-		return lensActive ? all.filter((a) => a.deal_tag === dealLens) : all;
-	});
-
-	const filteredPreps = $derived.by(() => {
-		const all = dashboard.briefing?.meeting_preps ?? [];
-		return lensActive ? all.filter((p) => p.deal_tag === dealLens) : all;
-	});
-
-	const filteredEvents = $derived.by(() => {
-		const all = dashboard.briefing?.calendar?.events ?? [];
-		return lensActive ? all.filter((e) => e.deal_tag === dealLens) : all;
-	});
-
-	const filteredConflicts = $derived.by(() => {
-		const all = dashboard.briefing?.calendar?.conflicts ?? [];
-		if (!lensActive) return all;
-		const visibleTitles = new Set(filteredEvents.map((e) => e.title));
-		return all.filter((c) => c.event_titles.some((t) => visibleTitles.has(t)));
-	});
-
-	const filteredEmailActToday = $derived.by(() => {
-		const all = dashboard.briefing?.email?.act_today ?? [];
-		return lensActive ? all.filter((m) => m.deal_tag === dealLens) : all;
-	});
-
-	const filteredEmailFyi = $derived.by(() => {
-		const all = dashboard.briefing?.email?.fyi ?? [];
-		return lensActive ? all.filter((m) => m.deal_tag === dealLens) : all;
-	});
-
-	const filteredChannels = $derived.by(() => {
-		const all = dashboard.briefing?.slack?.channels ?? [];
-		return lensActive ? all.filter((ch) => ch.deal_tag === dealLens) : all;
-	});
-
-	const filteredIntel = $derived.by(() => {
-		const all = dashboard.briefing?.intelligence ?? [];
-		if (!lensActive) return all;
-		return all
-			.map((cat) => ({
-				...cat,
-				items: cat.items.filter((it) => tagsMatchDeal(it.tags, dealLens!))
-			}))
-			.filter((cat) => cat.items.length > 0);
-	});
-
-	const counts = $derived.by(() => {
-		const b = dashboard.briefing;
-		if (!b) return { calendar: 0, email: 0, slack: 0, research: 0, conflicts: 0, pending: 0 };
-		return {
-			calendar: filteredEvents.length,
-			email: filteredEmailActToday.length + filteredEmailFyi.length,
-			slack: filteredChannels.length,
-			research: filteredIntel.reduce((n, c) => n + c.items.length, 0),
-			conflicts: filteredConflicts.length,
-			pending: dashboard.questions.filter((q) => q.status === 'PENDING').length
-		};
-	});
-
 	// ── Cmd-K search index ──────────────────────────────────────────────────
 	const searchItems = $derived.by(() => {
 		const items: SearchItem[] = [];
 		const lc = (s: string | null | undefined) => (s ?? '').toLowerCase();
 
-		filteredActions.forEach((a, i) => {
+		view.filteredActions.forEach((a, i) => {
 			items.push({
 				id: `action:${a.id}`,
 				kind: 'action',
@@ -238,7 +167,7 @@
 			});
 		});
 
-		filteredEmailActToday.concat(filteredEmailFyi).forEach((m) => {
+		view.filteredEmailActToday.concat(view.filteredEmailFyi).forEach((m) => {
 			items.push({
 				id: `email:${m.id}`,
 				kind: 'email',
@@ -249,7 +178,7 @@
 			});
 		});
 
-		filteredChannels.forEach((ch) => {
+		view.filteredChannels.forEach((ch) => {
 			items.push({
 				id: `channel:${ch.channel_id}`,
 				kind: 'slack-channel',
@@ -270,7 +199,7 @@
 			});
 		});
 
-		filteredEvents.forEach((e, i) => {
+		view.filteredEvents.forEach((e, i) => {
 			items.push({
 				id: `event:${i}`,
 				kind: 'event',
@@ -281,7 +210,7 @@
 			});
 		});
 
-		filteredPreps.forEach((p, i) => {
+		view.filteredPreps.forEach((p, i) => {
 			items.push({
 				id: `prep:${i}`,
 				kind: 'prep',
@@ -292,7 +221,7 @@
 			});
 		});
 
-		filteredIntel.forEach((cat) => {
+		view.filteredIntel.forEach((cat) => {
 			cat.items.forEach((it, i) => {
 				items.push({
 					id: `intel:${cat.category_id}:${i}`,
@@ -311,7 +240,7 @@
 	async function dispatchSearchSelection(item: SearchItem) {
 		paletteOpen = false;
 		if (item.kind === 'prep') {
-			const prep = filteredPreps[item.prepIndex ?? -1];
+			const prep = view.filteredPreps[item.prepIndex ?? -1];
 			if (prep) await openPrep(prep);
 			return;
 		}
@@ -436,8 +365,8 @@
 
 		<DealLensBar
 			deals={dashboard.config?.active_deals ?? []}
-			selected={dealLens}
-			onSelect={(id) => (dealLens = id)}
+			selected={view.dealLens}
+			onSelect={(id) => (view.dealLens = id)}
 		/>
 
 		<!-- Two-pane body -->
@@ -457,15 +386,15 @@
 						onToggle={(o) => (actionsOpen = o)}
 						icon="⚡"
 						title="Action items"
-						count={filteredActions.length}
+						count={view.filteredActions.length}
 					>
-						{#if filteredActions.length === 0}
+						{#if view.filteredActions.length === 0}
 							<p class="text-xs text-base-content/40 italic">
-								{lensActive ? `No actions for ${lensName}.` : 'Nothing queued.'}
+								{view.lensActive ? `No actions for ${view.lensName}.` : 'Nothing queued.'}
 							</p>
 						{:else}
 							<ul class="flex flex-col gap-2">
-								{#each [...filteredActions].sort((a, c) => priorityRank(a.priority) - priorityRank(c.priority)) as a}
+								{#each [...view.filteredActions].sort((a, c) => priorityRank(a.priority) - priorityRank(c.priority)) as a}
 									{@const deal = dashboard.dealById(a.deal_tag)}
 									<li class="rounded-lg bg-base-100/40 border border-base-content/5 px-3 py-2.5 flex flex-col gap-1.5">
 										<div class="flex items-start gap-2">
@@ -486,7 +415,7 @@
 				</div>
 
 				<!-- Meeting preps: takes share of remaining height when open, scrolls internally -->
-				{#if filteredPreps.length > 0}
+				{#if view.filteredPreps.length > 0}
 					<div class={prepsOpen ? 'md:flex-1 md:min-h-0' : 'md:shrink-0'}>
 						<SectionCard
 							fillHeight={prepsOpen}
@@ -495,10 +424,10 @@
 							onToggle={(o) => (prepsOpen = o)}
 							icon="📝"
 							title="Meeting preps"
-							count={filteredPreps.length}
+							count={view.filteredPreps.length}
 						>
 							<ul class="flex flex-col gap-1.5">
-								{#each filteredPreps as p}
+								{#each view.filteredPreps as p}
 									{@const deal = dashboard.dealById(p.deal_tag)}
 									<li class="flex items-center gap-2 text-xs">
 										<span class="font-mono text-base-content/50 w-12">{p.time}</span>
@@ -541,7 +470,7 @@
 				<nav class="shrink-0 flex gap-1 border-b border-base-content/10 -mx-1 px-1 overflow-x-auto overflow-y-hidden">
 					{#each TAB_KEYS as key}
 						{@const active = tab === key}
-						{@const count = key === 'summary' ? null : counts[key]}
+						{@const count = key === 'summary' ? null : view.counts[key]}
 						<button
 							class="shrink-0 px-3 py-2 text-xs font-medium border-b-2 -mb-px transition-colors flex items-center gap-1.5 capitalize"
 							class:border-primary={active}
@@ -561,8 +490,8 @@
 									{count}
 								</span>
 							{/if}
-							{#if key === 'calendar' && counts.conflicts > 0}
-								<span class="text-warning" title="{counts.conflicts} conflict{counts.conflicts > 1 ? 's' : ''}">⚠</span>
+							{#if key === 'calendar' && view.counts.conflicts > 0}
+								<span class="text-warning" title="{view.counts.conflicts} conflict{view.counts.conflicts > 1 ? 's' : ''}">⚠</span>
 							{/if}
 						</button>
 					{/each}
@@ -597,8 +526,8 @@
 								<SectionCard
 									icon="❓"
 									title="Questions"
-									subtitle={counts.pending > 0
-										? `${counts.pending} pending of ${dashboard.questions.length}`
+									subtitle={view.counts.pending > 0
+										? `${view.counts.pending} pending of ${dashboard.questions.length}`
 										: `All ${dashboard.questions.length} answered`}
 									count={visibleQuestions.length}
 								>
@@ -697,12 +626,12 @@
 
 					{:else if tab === 'calendar' && b.calendar}
 						<div class="flex flex-col gap-3">
-							{#if b.calendar.summary && !lensActive}
+							{#if b.calendar.summary && !view.lensActive}
 								<p class="text-xs text-base-content/60 italic">{b.calendar.summary}</p>
 							{/if}
-							{#if filteredConflicts.length > 0}
+							{#if view.filteredConflicts.length > 0}
 								<div class="flex flex-col gap-2">
-									{#each filteredConflicts as c}
+									{#each view.filteredConflicts as c}
 										<div class="min-w-0 rounded-lg bg-warning/10 border border-warning/20 px-3 py-2.5">
 											<div class="flex items-center gap-2 text-xs font-medium text-warning mb-1">⚠️ Conflict at {c.time}</div>
 											<p class="text-xs text-base-content/80 break-words">{c.description}</p>
@@ -713,13 +642,13 @@
 									{/each}
 								</div>
 							{/if}
-							{#if filteredEvents.length === 0}
+							{#if view.filteredEvents.length === 0}
 								<p class="text-xs text-base-content/40 italic">
-									{lensActive ? `No events for ${lensName}.` : 'No events today.'}
+									{view.lensActive ? `No events for ${view.lensName}.` : 'No events today.'}
 								</p>
 							{/if}
 							<ul class="flex flex-col gap-1">
-								{#each filteredEvents as e}
+								{#each view.filteredEvents as e}
 									{@const deal = dashboard.dealById(e.deal_tag)}
 									<li
 										class="flex items-stretch gap-3 rounded-lg border-l-2 {eventBorder(e.type, e.urgency)} bg-base-100/30 px-3 py-2 text-xs {eventClass(e.type)}"
@@ -749,16 +678,16 @@
 
 					{:else if tab === 'email' && b.email}
 						<div class="flex flex-col gap-4">
-							{#if filteredEmailActToday.length === 0 && filteredEmailFyi.length === 0}
+							{#if view.filteredEmailActToday.length === 0 && view.filteredEmailFyi.length === 0}
 								<p class="text-xs text-base-content/40 italic">
-									{lensActive ? `No email for ${lensName}.` : 'No email today.'}
+									{view.lensActive ? `No email for ${view.lensName}.` : 'No email today.'}
 								</p>
 							{/if}
-							{#if filteredEmailActToday.length > 0}
+							{#if view.filteredEmailActToday.length > 0}
 								<div>
 									<div class="text-[10px] uppercase tracking-wider text-base-content/50 font-semibold mb-2">Act today</div>
 									<ul class="flex flex-col gap-2">
-										{#each filteredEmailActToday as m}
+										{#each view.filteredEmailActToday as m}
 											{@const deal = dashboard.dealById(m.deal_tag)}
 											<li class="rounded-lg border-l-4 border-error/60 bg-base-100/40 px-3 py-2.5">
 												<div class="flex items-center gap-2 mb-1 flex-wrap">
@@ -775,11 +704,11 @@
 									</ul>
 								</div>
 							{/if}
-							{#if filteredEmailFyi.length > 0}
+							{#if view.filteredEmailFyi.length > 0}
 								<div>
 									<div class="text-[10px] uppercase tracking-wider text-base-content/50 font-semibold mb-2">FYI</div>
 									<ul class="flex flex-col gap-1.5">
-										{#each filteredEmailFyi as m}
+										{#each view.filteredEmailFyi as m}
 											{@const deal = dashboard.dealById(m.deal_tag)}
 											<li class="rounded-lg border border-base-content/10 bg-base-100/20 px-3 py-2 text-xs">
 												<div class="flex items-center gap-2 mb-0.5 flex-wrap">
@@ -796,7 +725,7 @@
 									</ul>
 								</div>
 							{/if}
-							{#if b.email.no_action_summary && !lensActive}
+							{#if b.email.no_action_summary && !view.lensActive}
 								<p class="text-[10px] text-base-content/40 italic border-t border-base-content/5 pt-2">
 									{b.email.no_action_summary}
 								</p>
@@ -805,16 +734,16 @@
 
 					{:else if tab === 'slack' && b.slack}
 						<div class="flex flex-col gap-3">
-							{#if b.slack.since && !lensActive}
+							{#if b.slack.since && !view.lensActive}
 								<p class="text-[10px] text-base-content/50">Since {b.slack.since}</p>
 							{/if}
-							{#if filteredChannels.length === 0}
+							{#if view.filteredChannels.length === 0}
 								<p class="text-xs text-base-content/40 italic">
-									{lensActive ? `No slack channels for ${lensName}.` : 'No slack activity.'}
+									{view.lensActive ? `No slack channels for ${view.lensName}.` : 'No slack activity.'}
 								</p>
 							{/if}
 							<ul class="flex flex-col gap-3">
-								{#each filteredChannels as ch}
+								{#each view.filteredChannels as ch}
 									{@const deal = dashboard.dealById(ch.deal_tag)}
 									<li class="rounded-lg bg-base-100/30 border border-base-content/5 p-3">
 										<div class="flex items-center gap-2 mb-2 flex-wrap">
@@ -856,7 +785,7 @@
 									</li>
 								{/each}
 							</ul>
-							{#if !lensActive && b.slack.dms.length > 0}
+							{#if !view.lensActive && b.slack.dms.length > 0}
 								<div>
 									<div class="text-[10px] uppercase tracking-wider text-base-content/50 font-semibold mb-2">DMs</div>
 									<ul class="flex flex-col gap-1.5">
@@ -877,12 +806,12 @@
 
 					{:else if tab === 'research'}
 						<div class="flex flex-col gap-3">
-							{#if filteredIntel.length === 0}
+							{#if view.filteredIntel.length === 0}
 								<p class="text-xs text-base-content/40 italic">
-									{lensActive ? `No intel tagged for ${lensName}.` : 'No intelligence items today.'}
+									{view.lensActive ? `No intel tagged for ${view.lensName}.` : 'No intelligence items today.'}
 								</p>
 							{/if}
-							{#each filteredIntel as cat}
+							{#each view.filteredIntel as cat}
 								{@const def = dashboard.categoryById(cat.category_id)}
 								<SectionCard
 									icon={def?.icon ?? '📰'}
