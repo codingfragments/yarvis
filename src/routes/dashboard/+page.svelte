@@ -20,7 +20,6 @@
 	import SlackTab from '$lib/components/dashboard/tabs/SlackTab.svelte';
 	import ResearchTab from '$lib/components/dashboard/tabs/ResearchTab.svelte';
 	import type { SearchItem } from '$lib/components/dashboard/CommandPalette.svelte';
-	import { buildSearchItems } from '$lib/dashboard/searchIndex';
 
 	const dashboard = getDashboardStore();
 	const view = getDashboardViewStore();
@@ -128,18 +127,6 @@
 			prepLoading = false;
 		}
 	}
-
-	const searchItems = $derived(
-		buildSearchItems({
-			actions: view.filteredActions,
-			emailActToday: view.filteredEmailActToday,
-			emailFyi: view.filteredEmailFyi,
-			channels: view.filteredChannels,
-			events: view.filteredEvents,
-			preps: view.filteredPreps,
-			intel: view.filteredIntel
-		})
-	);
 
 	async function dispatchSearchSelection(item: SearchItem) {
 		paletteOpen = false;
@@ -302,7 +289,7 @@
 
 <CommandPalette
 	open={paletteOpen}
-	items={searchItems}
+	items={view.searchItems}
 	onClose={() => (paletteOpen = false)}
 	onSelect={dispatchSearchSelection}
 />

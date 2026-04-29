@@ -1,4 +1,5 @@
 import { getDashboardStore } from './dashboard.svelte';
+import { buildSearchItems } from '$lib/dashboard/searchIndex';
 
 const dashboard = getDashboardStore();
 
@@ -62,6 +63,18 @@ const filteredIntel = $derived.by(() => {
 		.filter((cat) => cat.items.length > 0);
 });
 
+const searchItems = $derived(
+	buildSearchItems({
+		actions: filteredActions,
+		emailActToday: filteredEmailActToday,
+		emailFyi: filteredEmailFyi,
+		channels: filteredChannels,
+		events: filteredEvents,
+		preps: filteredPreps,
+		intel: filteredIntel
+	})
+);
+
 const counts = $derived.by(() => {
 	const b = dashboard.briefing;
 	if (!b) return { calendar: 0, email: 0, slack: 0, research: 0, conflicts: 0, pending: 0 };
@@ -92,6 +105,7 @@ export function getDashboardViewStore() {
 		get filteredEmailFyi() { return filteredEmailFyi; },
 		get filteredChannels() { return filteredChannels; },
 		get filteredIntel() { return filteredIntel; },
-		get counts() { return counts; }
+		get counts() { return counts; },
+		get searchItems() { return searchItems; }
 	};
 }
