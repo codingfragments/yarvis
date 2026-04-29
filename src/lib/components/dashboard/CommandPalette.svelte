@@ -1,24 +1,10 @@
+<script lang="ts" module>
+	export type { SearchItem, SearchKind } from '$lib/dashboard/searchIndex';
+</script>
+
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-
-	export type SearchKind =
-		| 'action'
-		| 'email'
-		| 'slack-channel'
-		| 'slack-message'
-		| 'event'
-		| 'intel'
-		| 'prep';
-
-	export interface SearchItem {
-		id: string;
-		kind: SearchKind;
-		title: string;
-		subtitle?: string;
-		hay: string;
-		url?: string | null;
-		prepIndex?: number;
-	}
+	import type { SearchItem, SearchKind } from '$lib/dashboard/searchIndex';
 
 	interface Props {
 		open: boolean;
