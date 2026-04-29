@@ -19,7 +19,10 @@
 
 <div class="flex flex-col gap-3">
 	{#if calendar.summary && !lensActive}
-		<p class="text-xs text-base-content/60 italic">{calendar.summary}</p>
+		<div class="rounded-lg bg-base-200/40 border border-base-content/10 px-3 py-2 flex items-center gap-2 text-xs italic text-base-content/70">
+			<span aria-hidden="true">📅</span>
+			<span>{calendar.summary}</span>
+		</div>
 	{/if}
 	{#if conflicts.length > 0}
 		<div class="flex flex-col gap-2">

@@ -125,7 +125,7 @@
 </script>
 
 <div
-	class="max-w-7xl mx-auto px-4 md:h-[calc(100dvh-6rem)] md:flex md:flex-col"
+	class="max-w-[105rem] mx-auto px-4 md:h-[calc(100dvh-6rem)] md:flex md:flex-col"
 >
 	<DashboardHeader
 		briefing={dashboard.briefing}
@@ -173,7 +173,7 @@
 				<DashboardTabStrip {tab} counts={view.counts} onSelect={(k) => (tab = k)} />
 
 				<!-- Tab content -->
-				<div class="md:flex-1 md:min-w-0 md:overflow-y-auto md:min-h-0 pt-4">
+				<div class="md:flex-1 md:min-w-0 md:overflow-y-auto md:min-h-0 pt-4 pr-3">
 					{#if tab === 'summary'}
 						<SummaryTab
 							briefing={b}
