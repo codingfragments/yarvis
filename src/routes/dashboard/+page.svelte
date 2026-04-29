@@ -17,6 +17,7 @@
 	import MarkdownRenderer from '$lib/components/MarkdownRenderer.svelte';
 	import DealLensBar from '$lib/components/dashboard/DealLensBar.svelte';
 	import CommandPalette from '$lib/components/dashboard/CommandPalette.svelte';
+	import DashboardHeader from '$lib/components/dashboard/DashboardHeader.svelte';
 	import type { SearchItem } from '$lib/components/dashboard/CommandPalette.svelte';
 	import {
 		liveMinutesAway as liveMinutesAwayFn,
@@ -38,7 +39,6 @@
 
 	let tab = $state<TabKey>('summary');
 	let memoryOpen = $state(false);
-	let menuOpen = $state(false);
 	let funShowJoke = $state(false);
 	let now = $state(new Date());
 	let actionsOpen = $state(true);
@@ -97,7 +97,6 @@
 	}
 
 	async function openMemory() {
-		menuOpen = false;
 		await dashboard.loadMemory(settings.current.daily_dir);
 		memoryOpen = true;
 	}
@@ -185,96 +184,12 @@
 <div
 	class="max-w-7xl mx-auto px-4 md:h-[calc(100dvh-6rem)] md:flex md:flex-col"
 >
-	<!-- Top strip -->
-	<header class="md:shrink-0 flex items-center gap-3 py-3 border-b border-base-content/5">
-		<a href="/" class="btn btn-ghost btn-sm text-xs">← Back</a>
-		<div class="flex-1 min-w-0">
-			<h1 class="text-base font-semibold text-base-content leading-tight">Dashboard</h1>
-			{#if dashboard.briefing}
-				<p class="text-[10px] text-base-content/50 font-mono">
-					{dashboard.briefing.meta.briefing_date} · {now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-				</p>
-			{/if}
-		</div>
-
-		{#if dashboard.briefing}
-			{@const b = dashboard.briefing}
-			{@const stale = staleness(b.meta.generated_at)}
-			{@const nextMins = liveMinutesAway(b.meta.next_meeting?.starts_at)}
-
-			{#if b.meta.next_meeting && nextMins !== null}
-				<div class="hidden lg:flex items-center gap-1.5 text-xs text-base-content/70 max-w-xs">
-					<span class="opacity-60">next:</span>
-					<span class="font-medium text-base-content truncate">{b.meta.next_meeting.title}</span>
-					<span
-						class="font-mono"
-						class:text-error={nextMins <= 5 && nextMins > 0}
-						class:text-warning={nextMins > 5 && nextMins <= 15}
-					>
-						{fmtMinutesAway(nextMins)}
-					</span>
-				</div>
-			{/if}
-
-			<span
-				class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium font-mono"
-				class:bg-success={stale.tone === 'fresh'}
-				class:text-success-content={stale.tone === 'fresh'}
-				class:bg-warning={stale.tone === 'aging'}
-				class:text-warning-content={stale.tone === 'aging'}
-				class:bg-error={stale.tone === 'stale'}
-				class:text-error-content={stale.tone === 'stale'}
-				title="Time since briefing was generated"
-			>
-				{stale.label}
-			</span>
-		{/if}
-
-		<button
-			class="btn btn-ghost btn-sm text-[11px] gap-1.5 hidden sm:inline-flex"
-			onclick={() => (paletteOpen = true)}
-			title="Search today (⌘K)"
-		>
-			🔎
-			<kbd class="text-[9px] font-mono px-1 py-0.5 bg-base-300/50 rounded border border-base-content/10">⌘K</kbd>
-		</button>
-		<div class="relative">
-			<button
-				class="btn btn-ghost btn-sm text-xs"
-				onclick={() => (menuOpen = !menuOpen)}
-				aria-expanded={menuOpen}
-				aria-label="More"
-			>
-				⋯
-			</button>
-			{#if menuOpen}
-				<div
-					class="absolute right-0 mt-1 w-48 rounded-lg bg-base-200 border border-base-content/10 shadow-lg overflow-hidden z-30"
-				>
-					<button
-						class="w-full text-left px-3 py-2 text-xs hover:bg-base-300 transition-colors flex items-center gap-2"
-						onclick={openMemory}
-					>
-						<span>📒</span> View memory
-					</button>
-					<a
-						href="/briefings"
-						class="block px-3 py-2 text-xs hover:bg-base-300 transition-colors"
-						onclick={() => (menuOpen = false)}
-					>
-						📋 Briefings archive
-					</a>
-					<a
-						href="/settings"
-						class="block px-3 py-2 text-xs hover:bg-base-300 transition-colors"
-						onclick={() => (menuOpen = false)}
-					>
-						⚙️ Settings
-					</a>
-				</div>
-			{/if}
-		</div>
-	</header>
+	<DashboardHeader
+		briefing={dashboard.briefing}
+		{now}
+		onPalette={() => (paletteOpen = true)}
+		onMemory={openMemory}
+	/>
 
 	{#if dashboard.error}
 		<div class="rounded-xl bg-error/10 text-error border border-error/20 px-4 py-3 text-sm my-3">
