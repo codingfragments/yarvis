@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { getDashboardStore } from '$lib/stores/dashboard.svelte';
 	import { getSettingsStore } from '$lib/stores/settings.svelte';
+	import { getRefreshStore } from '$lib/stores/refresh.svelte';
 	import { readPrep } from '$lib/services/dashboard';
 	import { isTauri } from '$lib/services/tauri';
 	import type { DashboardQuestion, MeetingPrep } from '$lib/types';
@@ -19,6 +20,7 @@
 
 	const dashboard = getDashboardStore();
 	const settings = getSettingsStore();
+	const refresh = getRefreshStore();
 
 	const TAB_KEYS = ['summary', 'calendar', 'email', 'slack', 'research'] as const;
 	type TabKey = (typeof TAB_KEYS)[number];
@@ -56,9 +58,19 @@
 		};
 		window.addEventListener('keydown', onKey);
 		void load();
+		const unregister = refresh.register({
+			id: 'dashboard',
+			softRefresh: async () => {
+				if (!settings.loaded) return;
+				const { daily_dir, daily_src_dir, briefings_dir } = settings.current;
+				await dashboard.softRefresh(daily_dir, daily_src_dir, briefings_dir);
+			},
+			isBusy: () => dashboard.isBusy()
+		});
 		return () => {
 			clearInterval(t);
 			window.removeEventListener('keydown', onKey);
+			unregister();
 		};
 	});
 
@@ -405,14 +417,6 @@
 			🔎
 			<kbd class="text-[9px] font-mono px-1 py-0.5 bg-base-300/50 rounded border border-base-content/10">⌘K</kbd>
 		</button>
-		<button
-			class="btn btn-primary btn-sm text-xs"
-			onclick={load}
-			disabled={dashboard.loading}
-			title="Re-read daily.json"
-		>
-			{dashboard.loading ? '…' : '↻'}
-		</button>
 		<div class="relative">
 			<button
 				class="btn btn-ghost btn-sm text-xs"
@@ -569,7 +573,7 @@
 			<!-- Right pane: tabs + content (independent scroll on md+) -->
 			<div class="order-1 md:order-none md:flex-1 md:min-w-0 md:min-h-0 flex flex-col">
 				<!-- Tab strip -->
-				<nav class="shrink-0 flex gap-1 border-b border-base-content/10 -mx-1 px-1 overflow-x-auto">
+				<nav class="shrink-0 flex gap-1 border-b border-base-content/10 -mx-1 px-1 overflow-x-auto overflow-y-hidden">
 					{#each TAB_KEYS as key}
 						{@const active = tab === key}
 						{@const count = key === 'summary' ? null : counts[key]}
@@ -945,7 +949,7 @@
 		</div>
 	{:else if !dashboard.error && !dashboard.loading}
 		<div class="rounded-xl bg-base-200/40 border border-base-content/5 px-6 py-10 text-center mt-3">
-			<p class="text-sm text-base-content/60">No daily.json yet — run the briefing skill, then click ↻.</p>
+			<p class="text-sm text-base-content/60">No daily.json yet — run the briefing skill; auto-refresh will pick it up.</p>
 		</div>
 	{:else if dashboard.loading}
 		<div class="flex justify-center py-12">

@@ -43,6 +43,27 @@ export function getBriefingsStore() {
 			}
 		},
 
+		async softRefresh(dir: string, maxDays: number) {
+			if (!isTauri()) return;
+			if (loading) return;
+			try {
+				const nextDates = await briefingsService.scanBriefings(dir, maxDays);
+				dates = nextDates;
+				if (currentDate) {
+					const stillThere = nextDates.some((d) => d.key === currentDate);
+					if (stillThere) {
+						files = await briefingsService.listDateFiles(dir, currentDate);
+					}
+				}
+			} catch {
+				// Soft refresh: keep last good state, swallow error.
+			}
+		},
+
+		isBusy(): boolean {
+			return loading;
+		},
+
 		async selectDate(dateKey: string, dir: string) {
 			currentDate = dateKey;
 			currentFile = null;

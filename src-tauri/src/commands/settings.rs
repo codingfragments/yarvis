@@ -35,6 +35,10 @@ pub struct Settings {
     pub daily_dir: String,
     #[serde(default = "default_daily_src_dir")]
     pub daily_src_dir: String,
+    #[serde(default = "default_auto_refresh_enabled")]
+    pub auto_refresh_enabled: bool,
+    #[serde(default = "default_auto_refresh_interval_minutes")]
+    pub auto_refresh_interval_minutes: u32,
 }
 
 fn default_daily_dir() -> String {
@@ -47,6 +51,14 @@ fn default_daily_src_dir() -> String {
     dirs::home_dir()
         .map(|h| h.join("claude-chats/src/daily").to_string_lossy().to_string())
         .unwrap_or_default()
+}
+
+fn default_auto_refresh_enabled() -> bool {
+    true
+}
+
+fn default_auto_refresh_interval_minutes() -> u32 {
+    5
 }
 
 impl Default for Settings {
@@ -69,6 +81,8 @@ impl Default for Settings {
                 .unwrap_or_default(),
             daily_dir: default_daily_dir(),
             daily_src_dir: default_daily_src_dir(),
+            auto_refresh_enabled: default_auto_refresh_enabled(),
+            auto_refresh_interval_minutes: default_auto_refresh_interval_minutes(),
         }
     }
 }

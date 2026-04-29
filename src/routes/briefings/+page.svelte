@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
   import { getBriefingsStore } from "$lib/stores/briefings.svelte";
   import { getSettingsStore } from "$lib/stores/settings.svelte";
+  import { getRefreshStore } from "$lib/stores/refresh.svelte";
   import BriefingSidebar from "$lib/components/BriefingSidebar.svelte";
   import MarkdownRenderer from "$lib/components/MarkdownRenderer.svelte";
   import SidePanel from "$lib/components/SidePanel.svelte";
@@ -9,6 +10,7 @@
 
   const store = getBriefingsStore();
   const settings = getSettingsStore();
+  const refresh = getRefreshStore();
 
   let searchQuery = $state("");
   let mainContent: HTMLDivElement;
@@ -120,6 +122,19 @@
         settings.current.briefings_max_days,
       );
     }
+
+    const unregister = refresh.register({
+      id: 'briefings',
+      softRefresh: async () => {
+        if (!settings.loaded) return;
+        await store.softRefresh(
+          settings.current.briefings_dir,
+          settings.current.briefings_max_days,
+        );
+      },
+      isBusy: () => store.isBusy(),
+    });
+    return () => unregister();
   });
 
   // Reload when settings change (e.g., navigated from settings page)

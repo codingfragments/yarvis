@@ -213,6 +213,44 @@
 		</div>
 	</section>
 
+	<!-- Auto-refresh -->
+	<section class="rounded-xl bg-base-200/40 border border-base-content/5 p-5 flex flex-col gap-4">
+		<h2 class="text-xs font-semibold uppercase tracking-wider text-base-content/50">Auto-refresh</h2>
+
+		<div class="form-control">
+			<label class="label cursor-pointer justify-start gap-3">
+				<input
+					type="checkbox"
+					class="toggle toggle-primary toggle-sm"
+					checked={settings.current.auto_refresh_enabled}
+					onchange={(e) => settings.update({ auto_refresh_enabled: e.currentTarget.checked })}
+				/>
+				<span class="label-text">Refresh data automatically</span>
+			</label>
+			<div class="label pt-0">
+				<span class="label-text-alt text-base-content/30">Pulls new and updated data without changing the page or losing focus.</span>
+			</div>
+		</div>
+
+		<div class="form-control" class:opacity-40={!settings.current.auto_refresh_enabled}>
+			<label class="label" for="refresh-interval">
+				<span class="label-text">Refresh every</span>
+				<span class="label-text-alt text-base-content/40">{settings.current.auto_refresh_interval_minutes} min</span>
+			</label>
+			<input
+				id="refresh-interval"
+				type="range"
+				min="1"
+				max="60"
+				step="1"
+				value={settings.current.auto_refresh_interval_minutes}
+				disabled={!settings.current.auto_refresh_enabled}
+				oninput={(e) => settings.update({ auto_refresh_interval_minutes: parseInt(e.currentTarget.value) })}
+				class="range range-primary range-xs"
+			/>
+		</div>
+	</section>
+
 	<!-- Briefings -->
 	<section class="rounded-xl bg-base-200/40 border border-base-content/5 p-5 flex flex-col gap-4">
 		<h2 class="text-xs font-semibold uppercase tracking-wider text-base-content/50">Briefings</h2>

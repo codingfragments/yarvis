@@ -3,6 +3,7 @@
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import StatusBar from '$lib/components/StatusBar.svelte';
 	import { getSettingsStore } from '$lib/stores/settings.svelte';
+	import { getRefreshStore } from '$lib/stores/refresh.svelte';
 	import { onMount } from 'svelte';
 	import pkg from '../../package.json';
 
@@ -10,6 +11,7 @@
 
 	let { children } = $props();
 	const settingsStore = getSettingsStore();
+	const refresh = getRefreshStore();
 
 	const resolvedTheme = $derived(
 		settingsStore.current.theme === 'auto'
@@ -23,6 +25,30 @@
 
 	onMount(() => {
 		settingsStore.load();
+
+		const onKey = (e: KeyboardEvent) => {
+			if ((e.metaKey || e.ctrlKey) && (e.key === 'r' || e.key === 'R')) {
+				const target = e.target as HTMLElement | null;
+				const tag = target?.tagName;
+				if (tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable) return;
+				e.preventDefault();
+				void refresh.triggerNow();
+			}
+		};
+		window.addEventListener('keydown', onKey);
+		return () => {
+			window.removeEventListener('keydown', onKey);
+			refresh.stop();
+		};
+	});
+
+	$effect(() => {
+		if (!settingsStore.loaded) return;
+		refresh.configure({
+			enabled: settingsStore.current.auto_refresh_enabled,
+			intervalMinutes: settingsStore.current.auto_refresh_interval_minutes
+		});
+		refresh.start();
 	});
 </script>
 
