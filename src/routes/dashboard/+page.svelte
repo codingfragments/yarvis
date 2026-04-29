@@ -18,15 +18,9 @@
 	import DealLensBar from '$lib/components/dashboard/DealLensBar.svelte';
 	import CommandPalette from '$lib/components/dashboard/CommandPalette.svelte';
 	import DashboardHeader from '$lib/components/dashboard/DashboardHeader.svelte';
+	import DashboardSidebar from '$lib/components/dashboard/DashboardSidebar.svelte';
 	import type { SearchItem } from '$lib/components/dashboard/CommandPalette.svelte';
-	import {
-		liveMinutesAway as liveMinutesAwayFn,
-		fmtMinutesAway,
-		staleness as stalenessFn,
-		eventClass,
-		eventBorder,
-		priorityRank
-	} from '$lib/dashboard/format';
+	import { eventClass, eventBorder } from '$lib/dashboard/format';
 	import { buildSearchItems } from '$lib/dashboard/searchIndex';
 
 	const dashboard = getDashboardStore();
@@ -39,10 +33,7 @@
 
 	let tab = $state<TabKey>('summary');
 	let memoryOpen = $state(false);
-	let funShowJoke = $state(false);
 	let now = $state(new Date());
-	let actionsOpen = $state(true);
-	let prepsOpen = $state(false);
 	let prepDrawerOpen = $state(false);
 	let prepLoading = $state(false);
 	let prepContent = $state<string | null>(null);
@@ -143,14 +134,6 @@
 		}
 	}
 
-	function liveMinutesAway(startsAt: string | null | undefined): number | null {
-		return liveMinutesAwayFn(startsAt, now.getTime());
-	}
-
-	function staleness(generatedAt: string | null | undefined) {
-		return stalenessFn(generatedAt, now.getTime());
-	}
-
 	const searchItems = $derived(
 		buildSearchItems({
 			actions: view.filteredActions,
@@ -215,96 +198,15 @@
 		<div
 			class="md:flex-1 md:min-h-0 flex flex-col md:flex-row gap-4 pt-3 pb-4"
 		>
-			<!-- Left rail (independent scroll on md+) -->
-			<aside
-				class="order-2 md:order-none md:w-80 md:shrink-0 flex flex-col gap-3 md:min-h-0"
-			>
-				<!-- Actions: takes share of remaining height when open, scrolls internally -->
-				<div class={actionsOpen ? 'md:flex-1 md:min-h-0' : 'md:shrink-0'}>
-					<SectionCard
-						fillHeight={actionsOpen}
-						collapsible
-						defaultOpen
-						onToggle={(o) => (actionsOpen = o)}
-						icon="⚡"
-						title="Action items"
-						count={view.filteredActions.length}
-					>
-						{#if view.filteredActions.length === 0}
-							<p class="text-xs text-base-content/40 italic">
-								{view.lensActive ? `No actions for ${view.lensName}.` : 'Nothing queued.'}
-							</p>
-						{:else}
-							<ul class="flex flex-col gap-2">
-								{#each [...view.filteredActions].sort((a, c) => priorityRank(a.priority) - priorityRank(c.priority)) as a}
-									{@const deal = dashboard.dealById(a.deal_tag)}
-									<li class="rounded-lg bg-base-100/40 border border-base-content/5 px-3 py-2.5 flex flex-col gap-1.5">
-										<div class="flex items-start gap-2">
-											<UrgencyDot urgency={a.priority} size="md" />
-											<p class="flex-1 min-w-0 text-xs text-base-content/85 leading-snug break-words">{a.text}</p>
-										</div>
-										<div class="flex items-center gap-1.5 flex-wrap text-[10px] text-base-content/50">
-											{#if a.deadline}<span class="font-mono">⏰ {a.deadline}</span>{/if}
-											{#if a.source_type}<span class="opacity-60">· {a.source_type}</span>{/if}
-											<DealPill {deal} fallbackId={a.deal_tag} />
-											{#if a.url}<ExternalLink href={a.url} label="open" />{/if}
-										</div>
-									</li>
-								{/each}
-							</ul>
-						{/if}
-					</SectionCard>
-				</div>
-
-				<!-- Meeting preps: takes share of remaining height when open, scrolls internally -->
-				{#if view.filteredPreps.length > 0}
-					<div class={prepsOpen ? 'md:flex-1 md:min-h-0' : 'md:shrink-0'}>
-						<SectionCard
-							fillHeight={prepsOpen}
-							collapsible
-							defaultOpen={false}
-							onToggle={(o) => (prepsOpen = o)}
-							icon="📝"
-							title="Meeting preps"
-							count={view.filteredPreps.length}
-						>
-							<ul class="flex flex-col gap-1.5">
-								{#each view.filteredPreps as p}
-									{@const deal = dashboard.dealById(p.deal_tag)}
-									<li class="flex items-center gap-2 text-xs">
-										<span class="font-mono text-base-content/50 w-12">{p.time}</span>
-										<span class="flex-1 truncate text-base-content/80" title={p.title}>{p.title}</span>
-										<DealPill {deal} fallbackId={p.deal_tag} />
-										{#if p.file}
-											<button
-												class="text-[11px] text-primary hover:underline"
-												onclick={() => openPrep(p)}
-												title="Open prep document"
-											>open</button>
-										{/if}
-									</li>
-								{/each}
-							</ul>
-						</SectionCard>
-					</div>
-				{/if}
-
-				<!-- Fun: pinned at the bottom -->
-				{#if b.fun && (b.fun.fact || b.fun.joke)}
-					<button
-						class="md:shrink-0 rounded-xl bg-gradient-to-br from-secondary/10 via-accent/5 to-primary/10 border border-base-content/5 p-3 text-left hover:scale-[1.01] transition-transform"
-						onclick={() => (funShowJoke = !funShowJoke)}
-						title="Click to flip"
-					>
-						<div class="text-[10px] uppercase tracking-wider text-base-content/50 mb-1">
-							{funShowJoke ? '😄 Joke' : '✨ Fun fact'}
-						</div>
-						<p class="text-xs text-base-content/80 leading-relaxed line-clamp-4">
-							{funShowJoke ? (b.fun.joke ?? b.fun.fact) : (b.fun.fact ?? b.fun.joke)}
-						</p>
-					</button>
-				{/if}
-			</aside>
+			<DashboardSidebar
+				actions={view.filteredActions}
+				preps={view.filteredPreps}
+				fun={b.fun ?? null}
+				lensActive={view.lensActive}
+				lensName={view.lensName}
+				dealById={(id) => dashboard.dealById(id)}
+				onOpenPrep={openPrep}
+			/>
 
 			<!-- Right pane: tabs + content (independent scroll on md+) -->
 			<div class="order-1 md:order-none md:flex-1 md:min-w-0 md:min-h-0 flex flex-col">
