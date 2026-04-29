@@ -4,7 +4,7 @@
 	import { getDashboardViewStore } from '$lib/stores/dashboardView.svelte';
 	import { getSettingsStore } from '$lib/stores/settings.svelte';
 	import { getRefreshStore } from '$lib/stores/refresh.svelte';
-	import { readPrep } from '$lib/services/dashboard';
+	import { getPrepDrawerStore } from '$lib/stores/prepDrawer.svelte';
 	import { openUrl } from '$lib/services/tauri';
 	import type { DashboardQuestion, MeetingPrep } from '$lib/types';
 	import MarkdownViewer from '$lib/components/dashboard/MarkdownViewer.svelte';
@@ -25,15 +25,11 @@
 	const view = getDashboardViewStore();
 	const settings = getSettingsStore();
 	const refresh = getRefreshStore();
+	const prep = getPrepDrawerStore();
 
 	let tab = $state<TabKey>('summary');
 	let memoryOpen = $state(false);
 	let now = $state(new Date());
-	let prepDrawerOpen = $state(false);
-	let prepLoading = $state(false);
-	let prepContent = $state<string | null>(null);
-	let prepError = $state<string | null>(null);
-	let prepMeta = $state<{ title: string; time: string; filename: string } | null>(null);
 	let questionEditorOpen = $state(false);
 	let editingQuestion = $state<DashboardQuestion | null>(null);
 	let editorError = $state<string | null>(null);
@@ -46,7 +42,7 @@
 		const onKey = (e: KeyboardEvent) => {
 			if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
 				// Defer to the MarkdownViewer when one is open
-				if (memoryOpen || prepDrawerOpen) return;
+				if (memoryOpen || prep.open) return;
 				e.preventDefault();
 				paletteOpen = !paletteOpen;
 			}
@@ -109,23 +105,12 @@
 	}
 
 	async function openPrep(p: MeetingPrep) {
-		if (!p.file || !dashboard.briefing) return;
-		prepMeta = { title: p.title, time: p.time, filename: p.file };
-		prepContent = null;
-		prepError = null;
-		prepLoading = true;
-		prepDrawerOpen = true;
-		try {
-			prepContent = await readPrep(
-				settings.current.briefings_dir,
-				dashboard.briefing.meta.briefing_date,
-				p.file
-			);
-		} catch (e) {
-			prepError = String(e);
-		} finally {
-			prepLoading = false;
-		}
+		if (!dashboard.briefing) return;
+		await prep.openPrep(
+			p,
+			settings.current.briefings_dir,
+			dashboard.briefing.meta.briefing_date
+		);
 	}
 
 	async function dispatchSearchSelection(item: SearchItem) {
@@ -257,14 +242,14 @@
 />
 
 <MarkdownViewer
-	open={prepDrawerOpen}
+	open={prep.open}
 	icon="📝"
-	title={prepMeta?.title ?? 'Meeting prep'}
-	subtitle={prepMeta ? `${prepMeta.time} · ${prepMeta.filename}` : null}
-	content={prepContent}
-	loading={prepLoading}
-	error={prepError}
-	onClose={() => (prepDrawerOpen = false)}
+	title={prep.title}
+	subtitle={prep.subtitle}
+	content={prep.content}
+	loading={prep.loading}
+	error={prep.error}
+	onClose={() => prep.close()}
 />
 
 <QuestionEditor
