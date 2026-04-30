@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { ActiveDealDef, Calendar, CalendarEvent as CalendarEventData, Conflict } from '$lib/types';
 	import CalendarEvent from '../CalendarEvent.svelte';
+	import Callout from '../Callout.svelte';
 	import SectionCard from '../SectionCard.svelte';
 
 	interface Props {
@@ -37,13 +38,12 @@
 		>
 			<div class="flex flex-col gap-2">
 				{#each conflicts as c}
-					<div class="min-w-0 rounded-lg bg-warning/10 border border-warning/20 px-3 py-2.5">
-						<div class="flex items-center gap-2 text-xs font-medium text-warning mb-1">⚠️ Conflict at {c.time}</div>
+					<Callout tone="warning" icon="⚠" title="Conflict at {c.time}">
 						<p class="text-xs text-base-content/80 break-words">{c.description}</p>
 						{#if c.action_needed}
 							<p class="text-xs font-semibold text-base-content/90 mt-1.5 break-words">→ {c.action_needed}</p>
 						{/if}
-					</div>
+					</Callout>
 				{/each}
 			</div>
 		</SectionCard>

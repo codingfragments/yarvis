@@ -1,6 +1,7 @@
 <script lang="ts">
 	import AppLauncher from '$lib/components/AppLauncher.svelte';
 	import ActionItem from '$lib/components/dashboard/ActionItem.svelte';
+	import Callout from '$lib/components/dashboard/Callout.svelte';
 	import { getSettingsStore } from '$lib/stores/settings.svelte';
 	import { getRefreshStore } from '$lib/stores/refresh.svelte';
 	import { readConfig, readDaily, getDailyStatus } from '$lib/services/dashboard';
@@ -268,14 +269,11 @@
 			<!-- Focus + Fun -->
 			<div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
 				{#if b.focus_prompt}
-					<section class="rounded-xl bg-primary/5 border-l-4 border-primary px-4 py-3">
-						<div class="text-[10px] uppercase tracking-wider text-primary/70 font-semibold mb-1.5">
-							🎯 Today's focus
-						</div>
+					<Callout tone="primary" icon="🎯" title="Today's focus">
 						<p class="text-xs text-base-content/80 leading-relaxed whitespace-pre-wrap break-words">
 							{b.focus_prompt}
 						</p>
-					</section>
+					</Callout>
 				{/if}
 
 				{#if b.fun && (b.fun.fact || b.fun.joke)}

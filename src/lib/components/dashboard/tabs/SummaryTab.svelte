@@ -2,6 +2,7 @@
 	import type { DailyBriefing, DashboardQuestion } from '$lib/types';
 	import SectionCard from '../SectionCard.svelte';
 	import Chip from '../Chip.svelte';
+	import Callout from '../Callout.svelte';
 	import MarkdownRenderer from '$lib/components/MarkdownRenderer.svelte';
 	import { questionTone } from '$lib/dashboard/format';
 
@@ -27,18 +28,17 @@
 		<section class="rounded-xl bg-gradient-to-br from-primary/10 via-base-200/40 to-secondary/10 border border-base-content/5 px-5 py-4">
 			<h2 class="text-lg font-semibold text-base-content">{briefing.greeting.text}</h2>
 			{#if briefing.greeting.context_note}
-				<div class="mt-2 rounded-lg bg-base-100/60 border border-base-content/10 px-3.5 py-2 text-sm text-base-content/80">
+				<p class="mt-2 text-sm text-base-content/75 leading-relaxed break-words">
 					💡 {briefing.greeting.context_note}
-				</div>
+				</p>
 			{/if}
 		</section>
 	{/if}
 
 	{#if briefing.focus_prompt}
-		<section class="rounded-xl bg-primary/5 border-l-4 border-primary px-5 py-4">
-			<div class="text-xs uppercase tracking-wider text-primary/70 font-semibold mb-1.5">Today's focus</div>
+		<Callout tone="primary" title="Today's focus">
 			<p class="text-sm text-base-content/80 leading-relaxed whitespace-pre-wrap">{briefing.focus_prompt}</p>
-		</section>
+		</Callout>
 	{/if}
 
 	{#if questions.length > 0}
@@ -117,11 +117,10 @@
 							{/if}
 
 							{#if q.answer}
-								<div class="mt-2.5 rounded-md bg-success/5 border-l-2 border-success/50 px-3 py-2">
-									<div class="text-xs uppercase tracking-wider text-success/80 font-semibold mb-0.5">
-										Your answer
-									</div>
-									<p class="text-xs text-base-content/85 whitespace-pre-wrap leading-snug">{q.answer}</p>
+								<div class="mt-2.5">
+									<Callout tone="success" title="Your answer">
+										<p class="text-xs text-base-content/85 whitespace-pre-wrap leading-snug">{q.answer}</p>
+									</Callout>
 								</div>
 							{/if}
 

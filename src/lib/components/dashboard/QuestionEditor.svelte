@@ -2,6 +2,7 @@
 	import type { DashboardQuestion } from '$lib/types';
 	import MarkdownRenderer from '$lib/components/MarkdownRenderer.svelte';
 	import Chip from './Chip.svelte';
+	import Callout from './Callout.svelte';
 	import { questionTone } from '$lib/dashboard/format';
 
 	interface Props {
@@ -74,12 +75,9 @@
 
 			<div class="flex-1 min-h-0 overflow-y-auto px-5 py-4 flex flex-col gap-3">
 				{#if question.context}
-					<div class="rounded-lg bg-base-200/50 border-l-2 border-info/40 px-3 py-2">
-						<div class="text-xs uppercase tracking-wider text-info/80 font-semibold mb-0.5">
-							Context
-						</div>
+					<Callout tone="info" title="Context">
 						<p class="text-xs text-base-content/75 leading-snug">{question.context}</p>
-					</div>
+					</Callout>
 				{/if}
 
 				{#if question.body}
