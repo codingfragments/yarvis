@@ -72,3 +72,17 @@ export function rowAccent(opts: RowAccentOpts): string {
 export function priorityRank(p: string): number {
 	return p === 'critical' ? 0 : p === 'high' ? 1 : p === 'medium' ? 2 : 3;
 }
+
+export type ChipTone = 'success' | 'warning' | 'info' | 'error' | 'neutral';
+
+export function questionTone(status: string): ChipTone {
+	if (status === 'PENDING') return 'warning';
+	if (status === 'ANSWERED') return 'success';
+	return 'neutral';
+}
+
+export function activityTone(level: string): ChipTone {
+	if (level === 'high') return 'warning';
+	if (level === 'medium') return 'info';
+	return 'neutral';
+}

@@ -1,8 +1,9 @@
 <script lang="ts">
 	import type { DailyBriefing, DashboardQuestion } from '$lib/types';
 	import SectionCard from '../SectionCard.svelte';
-	import QuestionStatusPill from '../QuestionStatusPill.svelte';
+	import Chip from '../Chip.svelte';
 	import MarkdownRenderer from '$lib/components/MarkdownRenderer.svelte';
+	import { questionTone } from '$lib/dashboard/format';
 
 	interface Props {
 		briefing: DailyBriefing;
@@ -91,7 +92,7 @@
 							class:opacity-70={q.status === 'PROCESSED'}
 						>
 							<div class="flex items-start gap-2 mb-1.5">
-								<QuestionStatusPill status={q.status} />
+								<Chip variant="status" tone={questionTone(q.status)} labelOverride={q.status.toLowerCase()} />
 								<h4 class="flex-1 text-sm font-medium text-base-content leading-snug">{q.title}</h4>
 								{#if editable}
 									<button

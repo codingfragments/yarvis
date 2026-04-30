@@ -2,7 +2,7 @@
 	import type { ActiveDealDef, ActionItem as ActionItemData, Fun, MeetingPrep } from '$lib/types';
 	import SectionCard from './SectionCard.svelte';
 	import ActionItem from './ActionItem.svelte';
-	import DealPill from './DealPill.svelte';
+	import Chip from './Chip.svelte';
 	import { priorityRank } from '$lib/dashboard/format';
 
 	interface Props {
@@ -66,7 +66,7 @@
 						<li class="flex items-center gap-2 text-xs">
 							<span class="font-mono text-base-content/50 w-12">{p.time}</span>
 							<span class="flex-1 truncate text-base-content/80" title={p.title}>{p.title}</span>
-							<DealPill {deal} fallbackId={p.deal_tag} />
+							<Chip {deal} fallbackId={p.deal_tag} />
 							{#if p.file}
 								<button
 									class="text-xs text-primary hover:underline"

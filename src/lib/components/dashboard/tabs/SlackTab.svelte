@@ -1,9 +1,9 @@
 <script lang="ts">
 	import type { ActiveDealDef, SlackChannel, SlackSection } from '$lib/types';
 	import AccentRow from '../AccentRow.svelte';
-	import DealPill from '../DealPill.svelte';
+	import Chip from '../Chip.svelte';
 	import ExternalLink from '../ExternalLink.svelte';
-	import { rowAccent } from '$lib/dashboard/format';
+	import { activityTone, rowAccent } from '$lib/dashboard/format';
 
 	interface Props {
 		slack: SlackSection;
@@ -31,8 +31,8 @@
 			<AccentRow accent={rowAccent({ activityLevel: ch.activity_level })}>
 				<div class="flex items-center gap-2 mb-2 flex-wrap">
 					<span class="text-xs font-mono font-medium text-base-content/85">{ch.channel_name}</span>
-					<DealPill {deal} fallbackId={ch.deal_tag} />
-					<span class="text-xs text-base-content/50">{ch.activity_level}</span>
+					<Chip {deal} fallbackId={ch.deal_tag} />
+					<Chip variant="status" tone={activityTone(ch.activity_level)} labelOverride={ch.activity_level} />
 				</div>
 				{#if ch.messages.length === 0}
 					<p class="text-xs text-base-content/40">No messages.</p>

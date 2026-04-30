@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { ActiveDealDef, EmailItem, EmailSection } from '$lib/types';
 	import AccentRow from '../AccentRow.svelte';
-	import DealPill from '../DealPill.svelte';
+	import Chip from '../Chip.svelte';
 	import ExternalLink from '../ExternalLink.svelte';
 	import { rowAccent } from '$lib/dashboard/format';
 
@@ -32,7 +32,7 @@
 					<AccentRow accent={rowAccent({ urgency: m.urgency })}>
 						<div class="flex items-center gap-2 mb-1 flex-wrap">
 							<span class="text-xs font-medium text-base-content">{m.from}</span>
-							<DealPill {deal} fallbackId={m.deal_tag} />
+							<Chip {deal} fallbackId={m.deal_tag} />
 						</div>
 						<p class="text-xs text-base-content/85 mb-0.5 break-words">{m.subject}</p>
 						<p class="text-xs text-base-content/65 leading-snug break-words">{m.summary}</p>
@@ -56,7 +56,7 @@
 						<div class="flex items-center gap-2 mb-0.5 flex-wrap">
 							<span class="font-medium text-base-content/80">{m.from}</span>
 							<span class="text-base-content/50">— {m.subject}</span>
-							<DealPill {deal} fallbackId={m.deal_tag} />
+							<Chip {deal} fallbackId={m.deal_tag} />
 						</div>
 						<p class="text-xs text-base-content/60 leading-snug break-words">{m.summary}</p>
 						{#if m.context}<p class="text-xs text-base-content/50 italic mt-0.5 break-words">{m.context}</p>{/if}

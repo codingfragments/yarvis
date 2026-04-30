@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { ActiveDealDef, CalendarEvent } from '$lib/types';
 	import AccentRow from './AccentRow.svelte';
-	import DealPill from './DealPill.svelte';
+	import Chip from './Chip.svelte';
 	import ExternalLink from './ExternalLink.svelte';
 	import { rowAccent } from '$lib/dashboard/format';
 
@@ -27,7 +27,7 @@
 	<div class="flex flex-col gap-0.5">
 		<div class="flex items-center gap-1.5 flex-wrap">
 			<span class="font-medium text-base-content/90 truncate">{e.title}</span>
-			<DealPill {deal} fallbackId={e.deal_tag} />
+			<Chip {deal} fallbackId={e.deal_tag} />
 			{#if e.initiative}<span class="text-xs text-base-content/50">· {e.initiative}</span>{/if}
 		</div>
 		{#if e.notes}<p class="text-xs text-base-content/55 leading-snug break-words">{e.notes}</p>{/if}

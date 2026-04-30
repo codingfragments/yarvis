@@ -1,7 +1,8 @@
 <script lang="ts">
 	import type { DashboardQuestion } from '$lib/types';
 	import MarkdownRenderer from '$lib/components/MarkdownRenderer.svelte';
-	import QuestionStatusPill from './QuestionStatusPill.svelte';
+	import Chip from './Chip.svelte';
+	import { questionTone } from '$lib/dashboard/format';
 
 	interface Props {
 		open: boolean;
@@ -60,7 +61,7 @@
 		>
 			<header class="px-5 py-3.5 border-b border-base-content/10 shrink-0">
 				<div class="flex items-center gap-2 mb-1.5 flex-wrap">
-					<QuestionStatusPill status={question.status} size="md" />
+					<Chip variant="status" tone={questionTone(question.status)} labelOverride={question.status.toLowerCase()} />
 					{#if question.asked}
 						<span class="text-xs font-mono text-base-content/40">asked {question.asked}</span>
 					{/if}
