@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onDestroy, tick } from 'svelte';
 	import MarkdownRenderer from '$lib/components/MarkdownRenderer.svelte';
+	import Overlay from './Overlay.svelte';
 
 	interface Props {
 		open: boolean;
@@ -233,12 +234,6 @@
 			else void openSearch();
 			return;
 		}
-		if (e.key === 'Escape') {
-			e.preventDefault();
-			e.stopPropagation();
-			onClose();
-			return;
-		}
 		if (searchOpen && (e.key === 'Enter' || e.key === 'F3')) {
 			e.preventDefault();
 			if (e.shiftKey) prevMatch();
@@ -249,59 +244,29 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-{#if open}
-	<div
-		class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
-		onclick={onClose}
-		role="presentation"
-	>
-		<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-		<!-- svelte-ignore a11y_click_events_have_key_events -->
-		<!-- svelte-ignore a11y_interactive_supports_focus -->
-		<div
-			class="bg-base-100 rounded-2xl border border-base-content/10 shadow-2xl w-[80vw] h-[80vh] max-w-[100rem] flex flex-col overflow-hidden"
-			onclick={(e) => e.stopPropagation()}
-			role="dialog"
-			aria-modal="true"
-			aria-label={title}
+<Overlay {open} {onClose} size="xl" {title} {subtitle} {icon} ariaLabel={title}>
+	{#snippet actions()}
+		<button
+			class="btn btn-ghost btn-sm h-8 min-h-8 w-8 px-0 text-base"
+			class:btn-active={navOpen}
+			onclick={() => (navOpen = !navOpen)}
+			aria-pressed={navOpen}
+			title="Toggle outline"
 		>
-			<header class="shrink-0 flex items-center gap-2.5 px-5 py-3 border-b border-base-content/10">
-				<span class="text-lg leading-none">{icon}</span>
-				<div class="flex-1 min-w-0">
-					<h2 class="text-sm font-semibold text-base-content truncate leading-tight">{title}</h2>
-					{#if subtitle}
-						<p class="text-xs text-base-content/50 truncate font-mono">{subtitle}</p>
-					{/if}
-				</div>
-				<button
-					class="btn btn-ghost btn-sm h-8 min-h-8 w-8 px-0 text-base"
-					class:btn-active={navOpen}
-					onclick={() => (navOpen = !navOpen)}
-					aria-pressed={navOpen}
-					title="Toggle outline"
-				>
-					📑
-				</button>
-				<button
-					class="btn btn-ghost btn-sm h-8 min-h-8 w-8 px-0 text-base"
-					class:btn-active={searchOpen}
-					onclick={() => (searchOpen ? closeSearch() : void openSearch())}
-					aria-pressed={searchOpen}
-					title="Search (⌘K)"
-				>
-					🔎
-				</button>
-				<button
-					class="btn btn-ghost btn-sm h-8 min-h-8 w-8 px-0 text-lg leading-none"
-					onclick={onClose}
-					title="Close (Esc)"
-					aria-label="Close"
-				>
-					×
-				</button>
-			</header>
+			📑
+		</button>
+		<button
+			class="btn btn-ghost btn-sm h-8 min-h-8 w-8 px-0 text-base"
+			class:btn-active={searchOpen}
+			onclick={() => (searchOpen ? closeSearch() : void openSearch())}
+			aria-pressed={searchOpen}
+			title="Search (⌘K)"
+		>
+			🔎
+		</button>
+	{/snippet}
 
-			{#if searchOpen}
+	{#if searchOpen}
 				{@const tooShort = query.trim().length > 0 && query.trim().length < MIN_QUERY_LENGTH}
 				<div class="shrink-0 flex items-center gap-2 px-5 py-2 border-b border-base-content/10 bg-base-200/40">
 					<span class="text-base-content/50 text-sm">🔎</span>
@@ -389,9 +354,7 @@
 					{/if}
 				</div>
 			</div>
-		</div>
-	</div>
-{/if}
+</Overlay>
 
 <style>
 	/*

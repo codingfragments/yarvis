@@ -3,8 +3,8 @@
 </script>
 
 <script lang="ts">
-	import type { Snippet } from 'svelte';
 	import type { SearchItem, SearchKind } from '$lib/dashboard/searchIndex';
+	import Overlay from './Overlay.svelte';
 
 	interface Props {
 		open: boolean;
@@ -42,7 +42,6 @@
 					const pos = it.hay.indexOf(t);
 					if (pos === -1) return null;
 					score += 1;
-					// boost if found in title
 					if (it.title.toLowerCase().includes(t)) score += 2;
 				}
 				return { item: it, score };
@@ -66,11 +65,8 @@
 		if (open) queueMicrotask(() => inputEl?.focus());
 	});
 
-	function handleKeydown(e: KeyboardEvent) {
-		if (e.key === 'Escape') {
-			e.preventDefault();
-			onClose();
-		} else if (e.key === 'ArrowDown') {
+	function handleKey(e: KeyboardEvent) {
+		if (e.key === 'ArrowDown') {
 			e.preventDefault();
 			if (results.length > 0) highlight = (highlight + 1) % results.length;
 		} else if (e.key === 'ArrowUp') {
@@ -84,78 +80,64 @@
 	}
 </script>
 
-{#if open}
-	<div
-		class="fixed inset-0 z-50 flex items-start justify-center bg-black/40 backdrop-blur-sm pt-24 px-4"
-		onclick={onClose}
-		onkeydown={handleKeydown}
-		role="dialog"
-		tabindex="-1"
-		aria-modal="true"
-		aria-label="Search"
-	>
-		<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-		<div
-			class="bg-base-100 rounded-xl border border-base-content/10 shadow-2xl w-full max-w-2xl max-h-[70vh] overflow-hidden flex flex-col"
-			onclick={(e) => e.stopPropagation()}
-			onkeydown={(e) => e.stopPropagation()}
-			role="document"
-		>
-			<div class="px-4 py-3 border-b border-base-content/10 shrink-0 flex items-center gap-2">
-				<span class="text-base-content/40 text-sm">🔎</span>
-				<input
-					bind:this={inputEl}
-					bind:value={query}
-					type="text"
-					class="flex-1 bg-transparent outline-none text-sm text-base-content placeholder:text-base-content/40"
-					placeholder="Search today's actions, email, slack, events…"
-				/>
-				<span class="text-xs text-base-content/30 font-mono">esc</span>
-			</div>
-
-			<div class="flex-1 min-h-0 overflow-y-auto">
-				{#if results.length === 0}
-					<p class="text-xs text-base-content/40 italic px-4 py-6 text-center">
-						{query.trim() ? 'No matches.' : 'Type to search.'}
-					</p>
-				{:else}
-					<ul>
-						{#each results as r, i (r.id)}
-							{@const meta = KIND_META[r.kind]}
-							<li>
-								<button
-									class="w-full text-left px-4 py-2.5 flex items-start gap-3 transition-colors border-l-2"
-									class:bg-base-200={i === highlight}
-									class:border-primary={i === highlight}
-									class:border-transparent={i !== highlight}
-									onmouseenter={() => (highlight = i)}
-									onclick={() => onSelect(r)}
-								>
-									<span class="text-base shrink-0 leading-tight">{meta.icon}</span>
-									<div class="flex-1 min-w-0">
-										<div class="flex items-center gap-2">
-											<span class="text-sm text-base-content truncate font-medium">{r.title}</span>
-											<span class="text-xs uppercase tracking-wider {meta.tone} font-mono shrink-0">
-												{meta.label}
-											</span>
-										</div>
-										{#if r.subtitle}
-											<p class="text-xs text-base-content/55 truncate leading-tight mt-0.5">
-												{r.subtitle}
-											</p>
-										{/if}
-									</div>
-								</button>
-							</li>
-						{/each}
-					</ul>
-				{/if}
-			</div>
-
-			<footer class="px-4 py-2 border-t border-base-content/10 shrink-0 flex items-center justify-between text-xs text-base-content/40 font-mono">
-				<span>↑↓ move · ⏎ open · esc close</span>
-				<span>{results.length} {results.length === 1 ? 'match' : 'matches'}</span>
-			</footer>
+<Overlay {open} {onClose} onKeydown={handleKey} placement="top" size="md" ariaLabel="Search">
+	{#snippet header()}
+		<div class="px-4 py-3 border-b border-base-content/10 shrink-0 flex items-center gap-2">
+			<span class="text-base-content/40 text-sm">🔎</span>
+			<input
+				bind:this={inputEl}
+				bind:value={query}
+				type="text"
+				class="flex-1 bg-transparent outline-none text-sm text-base-content placeholder:text-base-content/40"
+				placeholder="Search today's actions, email, slack, events…"
+			/>
+			<span class="text-xs text-base-content/30 font-mono">esc</span>
 		</div>
+	{/snippet}
+
+	<div class="flex-1 min-h-0 overflow-y-auto">
+		{#if results.length === 0}
+			<p class="text-xs text-base-content/40 italic px-4 py-6 text-center">
+				{query.trim() ? 'No matches.' : 'Type to search.'}
+			</p>
+		{:else}
+			<ul>
+				{#each results as r, i (r.id)}
+					{@const meta = KIND_META[r.kind]}
+					<li>
+						<button
+							class="w-full text-left px-4 py-2.5 flex items-start gap-3 transition-colors border-l-2"
+							class:bg-base-200={i === highlight}
+							class:border-primary={i === highlight}
+							class:border-transparent={i !== highlight}
+							onmouseenter={() => (highlight = i)}
+							onclick={() => onSelect(r)}
+						>
+							<span class="text-base shrink-0 leading-tight">{meta.icon}</span>
+							<div class="flex-1 min-w-0">
+								<div class="flex items-center gap-2">
+									<span class="text-sm text-base-content truncate font-medium">{r.title}</span>
+									<span class="text-xs uppercase tracking-wider {meta.tone} font-mono shrink-0">
+										{meta.label}
+									</span>
+								</div>
+								{#if r.subtitle}
+									<p class="text-xs text-base-content/55 truncate leading-tight mt-0.5">
+										{r.subtitle}
+									</p>
+								{/if}
+							</div>
+						</button>
+					</li>
+				{/each}
+			</ul>
+		{/if}
 	</div>
-{/if}
+
+	{#snippet footer()}
+		<footer class="px-4 py-2 border-t border-base-content/10 shrink-0 flex items-center justify-between text-xs text-base-content/40 font-mono">
+			<span>↑↓ move · ⏎ open · esc close</span>
+			<span>{results.length} {results.length === 1 ? 'match' : 'matches'}</span>
+		</footer>
+	{/snippet}
+</Overlay>
