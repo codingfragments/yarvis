@@ -1,13 +1,12 @@
 <script lang="ts">
-	import type { ActiveDealDef, ActionItem, Fun, MeetingPrep } from '$lib/types';
+	import type { ActiveDealDef, ActionItem as ActionItemData, Fun, MeetingPrep } from '$lib/types';
 	import SectionCard from './SectionCard.svelte';
+	import ActionItem from './ActionItem.svelte';
 	import DealPill from './DealPill.svelte';
-	import UrgencyDot from './UrgencyDot.svelte';
-	import ExternalLink from './ExternalLink.svelte';
 	import { priorityRank } from '$lib/dashboard/format';
 
 	interface Props {
-		actions: ActionItem[];
+		actions: ActionItemData[];
 		preps: MeetingPrep[];
 		fun: Fun | null;
 		lensActive: boolean;
@@ -24,7 +23,7 @@
 </script>
 
 <aside
-	class="order-2 md:order-none md:w-80 md:shrink-0 flex flex-col gap-3 md:min-h-0"
+	class="order-2 md:order-none md:w-96 md:shrink-0 flex flex-col gap-3 md:min-h-0"
 >
 	<div class={actionsOpen ? 'md:flex-1 md:min-h-0' : 'md:shrink-0'}>
 		<SectionCard
@@ -43,19 +42,7 @@
 			{:else}
 				<ul class="flex flex-col gap-2">
 					{#each [...actions].sort((a, c) => priorityRank(a.priority) - priorityRank(c.priority)) as a}
-						{@const deal = dealById(a.deal_tag)}
-						<li class="rounded-lg bg-base-100/40 border border-base-content/5 px-3 py-2.5 flex flex-col gap-1.5">
-							<div class="flex items-start gap-2">
-								<UrgencyDot urgency={a.priority} size="md" />
-								<p class="flex-1 min-w-0 text-xs text-base-content/85 leading-snug break-words">{a.text}</p>
-							</div>
-							<div class="flex items-center gap-1.5 flex-wrap text-xs text-base-content/50">
-								{#if a.deadline}<span class="font-mono">⏰ {a.deadline}</span>{/if}
-								{#if a.source_type}<span class="opacity-60">· {a.source_type}</span>{/if}
-								<DealPill {deal} fallbackId={a.deal_tag} />
-								{#if a.url}<ExternalLink href={a.url} label="open" />{/if}
-							</div>
-						</li>
+						<ActionItem action={a} deal={dealById(a.deal_tag)} />
 					{/each}
 				</ul>
 			{/if}

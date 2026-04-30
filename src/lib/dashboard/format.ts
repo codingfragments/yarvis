@@ -34,20 +34,39 @@ export function staleness(
 	return { label: `${h}h`, tone: 'stale' };
 }
 
-export function eventClass(type: string): string {
-	if (type === 'declined') return 'opacity-50 line-through';
-	if (type === 'personal_block' || type === 'personal') return 'opacity-70';
-	return '';
+export interface RowAccentOpts {
+	urgency?: string | null;
+	eventType?: string | null;
+	activityLevel?: string | null;
 }
 
-export function eventBorder(type: string, urgency: string): string {
-	if (type === 'declined') return 'border-l-base-content/20';
-	if (type === 'personal_block' || type === 'personal') return 'border-l-base-content/20';
-	if (type === 'external' && (urgency === 'critical' || urgency === 'high')) return 'border-l-error';
-	if (type === 'external') return 'border-l-warning';
-	if (type === 'internal' && urgency === 'critical') return 'border-l-warning';
-	if (type === 'internal') return 'border-l-success';
-	return 'border-l-base-content/20';
+/**
+ * Maps semantic row state to a Tailwind `border-l-*` class for the accent rail.
+ * Calendar events use the richer type+urgency mapping; plain rows fall back to urgency only.
+ */
+export function rowAccent(opts: RowAccentOpts): string {
+	const { eventType, urgency, activityLevel } = opts;
+
+	if (eventType) {
+		if (eventType === 'declined') return 'border-l-base-content/20';
+		if (eventType === 'personal_block' || eventType === 'personal') return 'border-l-base-content/20';
+		if (eventType === 'external' && (urgency === 'critical' || urgency === 'high')) return 'border-l-error';
+		if (eventType === 'external') return 'border-l-warning';
+		if (eventType === 'internal' && urgency === 'critical') return 'border-l-warning';
+		if (eventType === 'internal') return 'border-l-success';
+		return 'border-l-base-content/20';
+	}
+
+	if (activityLevel) {
+		if (activityLevel === 'high') return 'border-l-warning';
+		if (activityLevel === 'medium') return 'border-l-info';
+		return 'border-l-base-content/30';
+	}
+
+	if (urgency === 'critical') return 'border-l-error';
+	if (urgency === 'high') return 'border-l-warning';
+	if (urgency === 'medium') return 'border-l-info';
+	return 'border-l-base-content/30';
 }
 
 export function priorityRank(p: string): number {

@@ -1,8 +1,9 @@
 <script lang="ts">
 	import type { ActiveDealDef, EmailItem, EmailSection } from '$lib/types';
+	import AccentRow from '../AccentRow.svelte';
 	import DealPill from '../DealPill.svelte';
-	import UrgencyDot from '../UrgencyDot.svelte';
 	import ExternalLink from '../ExternalLink.svelte';
+	import { rowAccent } from '$lib/dashboard/format';
 
 	interface Props {
 		email: EmailSection;
@@ -28,17 +29,19 @@
 			<ul class="flex flex-col gap-2">
 				{#each actToday as m}
 					{@const deal = dealById(m.deal_tag)}
-					<li class="rounded-lg border-l-4 border-error/60 bg-base-100/40 px-3 py-2.5">
+					<AccentRow accent={rowAccent({ urgency: m.urgency })}>
 						<div class="flex items-center gap-2 mb-1 flex-wrap">
-							<UrgencyDot urgency={m.urgency} />
 							<span class="text-xs font-medium text-base-content">{m.from}</span>
 							<DealPill {deal} fallbackId={m.deal_tag} />
-							{#if m.url}<ExternalLink href={m.url} label="gmail" />{/if}
 						</div>
 						<p class="text-xs text-base-content/85 mb-0.5 break-words">{m.subject}</p>
 						<p class="text-xs text-base-content/65 leading-snug break-words">{m.summary}</p>
 						{#if m.action}<p class="text-xs text-base-content/85 font-medium mt-1 break-words">→ {m.action}</p>{/if}
-					</li>
+
+						{#snippet trailing()}
+							{#if m.url}<ExternalLink href={m.url} label="gmail" />{/if}
+						{/snippet}
+					</AccentRow>
 				{/each}
 			</ul>
 		</div>
@@ -49,17 +52,19 @@
 			<ul class="flex flex-col gap-1.5">
 				{#each fyi as m}
 					{@const deal = dealById(m.deal_tag)}
-					<li class="rounded-lg border border-base-content/10 bg-base-100/20 px-3 py-2 text-xs">
+					<AccentRow accent={rowAccent({ urgency: m.urgency })}>
 						<div class="flex items-center gap-2 mb-0.5 flex-wrap">
-							<UrgencyDot urgency={m.urgency} />
 							<span class="font-medium text-base-content/80">{m.from}</span>
 							<span class="text-base-content/50">— {m.subject}</span>
 							<DealPill {deal} fallbackId={m.deal_tag} />
-							{#if m.url}<ExternalLink href={m.url} label="gmail" />{/if}
 						</div>
 						<p class="text-xs text-base-content/60 leading-snug break-words">{m.summary}</p>
 						{#if m.context}<p class="text-xs text-base-content/50 italic mt-0.5 break-words">{m.context}</p>{/if}
-					</li>
+
+						{#snippet trailing()}
+							{#if m.url}<ExternalLink href={m.url} label="gmail" />{/if}
+						{/snippet}
+					</AccentRow>
 				{/each}
 			</ul>
 		</div>

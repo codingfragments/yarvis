@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { ActiveDealDef } from '$lib/types';
+	import DealChip from './DealChip.svelte';
 
 	interface Props {
 		deals: ActiveDealDef[];
@@ -16,7 +17,8 @@
 			Lens:
 		</span>
 		<button
-			class="rounded-full px-2.5 py-1 text-xs font-medium border transition-colors"
+			type="button"
+			class="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors"
 			class:border-base-content={selected === null}
 			class:bg-base-content={selected === null}
 			class:text-base-100={selected === null}
@@ -30,16 +32,13 @@
 		</button>
 		{#each deals as d (d.id)}
 			{@const active = selected === d.id}
-			<button
-				class="rounded-full px-2.5 py-1 text-xs font-medium border transition-colors"
-				style:background-color={active ? (d.color ?? 'oklch(var(--p))') : 'transparent'}
-				style:color={active ? '#fff' : (d.color ?? 'oklch(var(--bc) / 0.7)')}
-				style:border-color={active ? (d.color ?? 'oklch(var(--p))') : (d.color ? `${d.color}55` : 'oklch(var(--b3))')}
+			<DealChip
+				deal={d}
+				interactive
+				{active}
+				title={d.stage}
 				onclick={() => onSelect(active ? null : d.id)}
-				title={d.stage ?? undefined}
-			>
-				{d.name}
-			</button>
+			/>
 		{/each}
 	</div>
 {/if}

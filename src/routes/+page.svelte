@@ -1,22 +1,34 @@
 <script lang="ts">
 	import AppLauncher from '$lib/components/AppLauncher.svelte';
+	import ActionItem from '$lib/components/dashboard/ActionItem.svelte';
 	import { getSettingsStore } from '$lib/stores/settings.svelte';
 	import { getRefreshStore } from '$lib/stores/refresh.svelte';
-	import { readDaily, getDailyStatus } from '$lib/services/dashboard';
-	import { isTauri, openUrl } from '$lib/services/tauri';
+	import { readConfig, readDaily, getDailyStatus } from '$lib/services/dashboard';
+	import { isTauri } from '$lib/services/tauri';
 	import { onMount } from 'svelte';
-	import type { ActionItem, DailyBriefing } from '$lib/types';
+	import type {
+		ActionItem as ActionItemData,
+		ActiveDealDef,
+		BriefingConfig,
+		DailyBriefing
+	} from '$lib/types';
 
 	const settings = getSettingsStore();
 	const refresh = getRefreshStore();
 
 	let briefing = $state<DailyBriefing | null>(null);
+	let config = $state<BriefingConfig | null>(null);
 	let pendingQuestions = $state(0);
 	let dailyExists = $state(true);
 	let loaded = $state(false);
 	let loadError = $state<string | null>(null);
 	let now = $state(new Date());
 	let funShowJoke = $state(false);
+
+	function dealById(id: string | null | undefined): ActiveDealDef | null {
+		if (!id || !config) return null;
+		return config.active_deals.find((d) => d.id === id) ?? null;
+	}
 
 	onMount(() => {
 		if (!isTauri()) return;
@@ -37,11 +49,12 @@
 			const check = () => (settings.loaded ? resolve() : setTimeout(check, 50));
 			check();
 		});
-		const { daily_dir, briefings_dir } = settings.current;
+		const { daily_dir, daily_src_dir, briefings_dir } = settings.current;
 		try {
-			const [b, status] = await Promise.allSettled([
+			const [b, status, c] = await Promise.allSettled([
 				readDaily(daily_dir, briefings_dir),
-				getDailyStatus(daily_dir)
+				getDailyStatus(daily_dir),
+				readConfig(daily_src_dir)
 			]);
 			if (status.status === 'fulfilled') {
 				pendingQuestions = status.value.pending_questions;
@@ -53,6 +66,7 @@
 				// only flag a real error when the file should be there
 				loadError = String(b.reason);
 			}
+			if (c.status === 'fulfilled') config = c.value;
 			loaded = true;
 		} catch (e) {
 			loadError = String(e);
@@ -62,10 +76,11 @@
 
 	async function softRefreshHome() {
 		if (!isTauri() || !settings.loaded) return;
-		const { daily_dir, briefings_dir } = settings.current;
-		const [b, status] = await Promise.allSettled([
+		const { daily_dir, daily_src_dir, briefings_dir } = settings.current;
+		const [b, status, c] = await Promise.allSettled([
 			readDaily(daily_dir, briefings_dir),
-			getDailyStatus(daily_dir)
+			getDailyStatus(daily_dir),
+			readConfig(daily_src_dir)
 		]);
 		if (status.status === 'fulfilled') {
 			pendingQuestions = status.value.pending_questions;
@@ -74,6 +89,7 @@
 		if (b.status === 'fulfilled') {
 			briefing = b.value;
 		}
+		if (c.status === 'fulfilled') config = c.value;
 	}
 
 	function priorityRank(p: string): number {
@@ -111,7 +127,7 @@
 		return { label: `${h}h`, tone: 'stale' };
 	}
 
-	const topActions = $derived.by((): ActionItem[] => {
+	const topActions = $derived.by((): ActionItemData[] => {
 		if (!briefing) return [];
 		return [...briefing.action_items]
 			.sort((a, c) => priorityRank(a.priority) - priorityRank(c.priority))
@@ -243,29 +259,7 @@
 					</div>
 					<ul class="flex flex-col gap-1.5">
 						{#each topActions as a}
-							<li class="flex items-start gap-2 text-xs">
-								<span
-									class="inline-block w-1.5 h-1.5 rounded-full mt-1.5 shrink-0"
-									class:bg-error={a.priority === 'critical'}
-									class:bg-warning={a.priority === 'high'}
-									class:bg-info={a.priority === 'medium'}
-									class:bg-base-content={a.priority === 'low'}
-									class:bg-opacity-40={a.priority === 'low'}
-								></span>
-								{#if a.url}
-									<button
-										class="flex-1 min-w-0 text-left text-base-content/85 leading-snug break-words hover:text-primary transition-colors"
-										onclick={() => openUrl(a.url)}
-									>
-										{a.text}
-									</button>
-								{:else}
-									<p class="flex-1 min-w-0 text-base-content/85 leading-snug break-words">{a.text}</p>
-								{/if}
-								{#if a.deadline}
-									<span class="text-[10px] text-base-content/45 font-mono shrink-0 mt-0.5">{a.deadline}</span>
-								{/if}
-							</li>
+							<ActionItem compact action={a} deal={dealById(a.deal_tag)} />
 						{/each}
 					</ul>
 				</section>
