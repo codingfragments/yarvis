@@ -16,20 +16,12 @@
 		<span class="text-xs uppercase tracking-wider text-base-content/40 font-semibold mr-1">
 			Lens:
 		</span>
-		<button
-			type="button"
-			class="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors"
-			class:border-base-content={selected === null}
-			class:bg-base-content={selected === null}
-			class:text-base-100={selected === null}
-			class:border-base-content--alpha={false}
-			class:border-opacity-15={selected !== null}
-			class:text-base-content={selected !== null}
-			class:bg-transparent={selected !== null}
+		<DealChip
+			labelOverride="All"
+			interactive
+			active={selected === null}
 			onclick={() => onSelect(null)}
-		>
-			All
-		</button>
+		/>
 		{#each deals as d (d.id)}
 			{@const active = selected === d.id}
 			<DealChip

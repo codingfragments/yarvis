@@ -33,7 +33,7 @@
 		<div class="flex-1 min-w-0">
 			{@render children()}
 		</div>
-		{#if trailing}<div class="flex items-center gap-1 shrink-0">{@render trailing()}</div>{/if}
+		{#if trailing}<div class="flex items-start gap-1 shrink-0 pt-0.5">{@render trailing()}</div>{/if}
 	</li>
 {:else}
 	<div
@@ -46,6 +46,6 @@
 		<div class="flex-1 min-w-0">
 			{@render children()}
 		</div>
-		{#if trailing}<div class="flex items-center gap-1 shrink-0">{@render trailing()}</div>{/if}
+		{#if trailing}<div class="flex items-start gap-1 shrink-0 pt-0.5">{@render trailing()}</div>{/if}
 	</div>
 {/if}
