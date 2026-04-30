@@ -26,9 +26,9 @@
 <div class="flex flex-col gap-4">
 	{#if briefing.greeting}
 		<section class="rounded-xl bg-gradient-to-br from-primary/10 via-base-200/40 to-secondary/10 border border-base-content/5 px-5 py-4">
-			<h2 class="text-lg font-semibold text-base-content">{briefing.greeting.text}</h2>
+			<h2 class="text-base font-semibold text-base-content leading-snug">{briefing.greeting.text}</h2>
 			{#if briefing.greeting.context_note}
-				<p class="mt-2 text-sm text-base-content/75 leading-relaxed break-words">
+				<p class="mt-1.5 text-xs text-base-content/70 leading-relaxed break-words">
 					💡 {briefing.greeting.context_note}
 				</p>
 			{/if}
@@ -37,7 +37,7 @@
 
 	{#if briefing.focus_prompt}
 		<Callout tone="primary" title="Today's focus">
-			<p class="text-sm text-base-content/80 leading-relaxed whitespace-pre-wrap">{briefing.focus_prompt}</p>
+			<p class="text-xs text-base-content/80 leading-relaxed whitespace-pre-wrap">{briefing.focus_prompt}</p>
 		</Callout>
 	{/if}
 

@@ -48,6 +48,30 @@ Component/Page → $lib/services/*.ts → invoke<T>() → Rust #[tauri::command]
 - Catppuccin plugins: `src/catppuccin.macchiato.ts`, `src/catppuccin.latte.ts`
 - Modern clean UI with **subtle** retro accents only (pixel font on logo, blinking cursor in status bar)
 
+### Dashboard typography scale
+
+Five tiers, named by intent. Use the closest match; resist inventing new sizes.
+
+- **Display** — `font-pixel text-lg` for the YARVIS brand only.
+- **Heading** — `text-base font-semibold` for greetings and modal titles; `text-sm font-semibold` for in-card section titles (`SectionCard` already applies this).
+- **Label** — `text-xs uppercase tracking-wider font-semibold {tone}` for tonal section labels (Callout titles, tile mini-labels). The Callout primitive owns this style.
+- **Body** — `text-xs text-base-content/{shade}` for default reading text. Pick `/85`–`/65` based on prominence.
+- **Meta** — `text-xs font-mono text-base-content/40-50` for dates, run numbers, IDs, counters.
+
+`text-sm` is reserved for modal/textarea content where there's room to breathe. Avoid `text-[10px]` or other arbitrary sizes — if a tile feels cramped, fix the layout, not the type.
+
+### Dashboard primitives
+
+A small shared kit lives under `src/lib/components/dashboard/`. Extend these before rolling new visuals:
+
+- **`AccentRow`** — row shell with a left accent rail. Color via `rowAccent({urgency, eventType?, activityLevel?})` from `src/lib/dashboard/format.ts`.
+- **`Chip`** — universal pill. Variants: `display` (deal-coloured tinted), `interactive` (lens chips, theme-contrast active state), `status` (semantic tone via `tone` prop). Tone helpers (`questionTone`, `activityTone`, etc.) live in `format.ts`.
+- **`Callout`** — semantic block (focus, context, answer, conflict). Tones: `primary | info | success | warning | error | neutral`.
+- **`SectionCard`** — collapsible container with header (icon, title, count, subtitle, actions, fillHeight).
+- **`ExternalLink`** — tauri-aware link with `pill` and `inline` variants.
+
+Decorative one-offs (greeting gradient banner, calendar summary line) deliberately sit outside the kit — don't fold them in unless their meaning shifts.
+
 ## Git Workflow
 
 - **main** — stable, working state only

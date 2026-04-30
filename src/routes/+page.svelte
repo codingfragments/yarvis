@@ -181,7 +181,7 @@
 					href="/dashboard#calendar"
 					class="rounded-xl bg-base-200/40 border border-base-content/5 p-3 flex flex-col gap-1 hover:bg-base-200/60 transition-colors no-underline"
 				>
-					<div class="text-[10px] uppercase tracking-wider text-base-content/40 font-semibold">
+					<div class="text-xs uppercase tracking-wider text-base-content/40 font-semibold">
 						Next meeting
 					</div>
 					{#if b.meta.next_meeting && nextMins !== null}
@@ -195,7 +195,7 @@
 							>
 								{fmtMinutesAway(nextMins)}
 							</span>
-							<span class="text-[10px] text-base-content/40">
+							<span class="text-xs text-base-content/40">
 								· {b.meta.next_meeting.starts_at.slice(11, 16)}
 							</span>
 						</div>
@@ -209,7 +209,7 @@
 					href="/dashboard"
 					class="rounded-xl bg-base-200/40 border border-base-content/5 p-3 flex flex-col gap-1 hover:bg-base-200/60 transition-colors no-underline"
 				>
-					<div class="text-[10px] uppercase tracking-wider text-base-content/40 font-semibold">
+					<div class="text-xs uppercase tracking-wider text-base-content/40 font-semibold">
 						Day pulse
 					</div>
 					<div class="flex items-baseline gap-3 text-sm font-mono mt-0.5">
@@ -217,7 +217,7 @@
 						<span title="Conflicts">⚠ {b.calendar?.conflicts.length ?? 0}</span>
 						<span title="Action items">⚡ {b.action_items.length}</span>
 					</div>
-					<div class="text-[10px] mt-1">
+					<div class="text-xs mt-1">
 						<span
 							class:text-success={stale.tone === 'fresh'}
 							class:text-warning={stale.tone === 'aging'}
@@ -234,7 +234,7 @@
 					href="/dashboard#summary"
 					class="rounded-xl bg-base-200/40 border border-base-content/5 p-3 flex flex-col gap-1 hover:bg-base-200/60 transition-colors no-underline"
 				>
-					<div class="text-[10px] uppercase tracking-wider text-base-content/40 font-semibold">
+					<div class="text-xs uppercase tracking-wider text-base-content/40 font-semibold">
 						Questions
 					</div>
 					{#if pendingQuestions > 0}
@@ -242,7 +242,7 @@
 							<span class="text-base font-mono text-warning">{pendingQuestions}</span>
 							<span class="text-xs text-base-content/60">open</span>
 						</div>
-						<div class="text-[10px] text-base-content/40">Click to answer →</div>
+						<div class="text-xs text-base-content/40">Click to answer →</div>
 					{:else}
 						<div class="text-sm text-base-content/40 italic">All caught up</div>
 					{/if}
@@ -253,10 +253,10 @@
 			{#if topActions.length > 0}
 				<section class="rounded-xl bg-base-200/40 border border-base-content/5 p-3">
 					<div class="flex items-center gap-2 mb-2">
-						<span class="text-[10px] uppercase tracking-wider text-base-content/40 font-semibold">
+						<span class="text-xs uppercase tracking-wider text-base-content/40 font-semibold">
 							⚡ Top actions
 						</span>
-						<a href="/dashboard" class="text-[10px] text-primary hover:underline ml-auto">all →</a>
+						<a href="/dashboard" class="text-xs text-primary hover:underline ml-auto">all →</a>
 					</div>
 					<ul class="flex flex-col gap-1.5">
 						{#each topActions as a}
@@ -282,7 +282,7 @@
 						onclick={() => (funShowJoke = !funShowJoke)}
 						title="Click to flip"
 					>
-						<div class="text-[10px] uppercase tracking-wider text-base-content/50 font-semibold mb-1.5">
+						<div class="text-xs uppercase tracking-wider text-base-content/50 font-semibold mb-1.5">
 							{funShowJoke ? '😄 Joke' : '✨ Fun fact'}
 						</div>
 						<p class="text-xs text-base-content/80 leading-relaxed break-words">
