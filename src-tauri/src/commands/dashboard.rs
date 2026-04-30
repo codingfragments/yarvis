@@ -387,11 +387,25 @@ fn resolve_meeting_preps(
         .into_iter()
         .filter_map(|mut p| {
             if let Some(file) = p.file.clone() {
-                if !is_safe_prep_filename(&file) {
+                // The briefing skill writes `file` as a path relative to the
+                // briefings root (e.g. `briefings/2026_04_30/meeting-prep-…md`).
+                // We only need the basename — the dated dir is reconstructed
+                // here, and the downstream `read_prep` validator expects a
+                // bare filename.
+                let basename = std::path::Path::new(&file)
+                    .file_name()
+                    .and_then(|s| s.to_str())
+                    .map(|s| s.to_string())
+                    .unwrap_or(file);
+                if !is_safe_prep_filename(&basename) {
                     return None;
                 }
-                let path = dated_dir.join(&file);
-                return if path.is_file() { Some(p) } else { None };
+                let path = dated_dir.join(&basename);
+                if !path.is_file() {
+                    return None;
+                }
+                p.file = Some(basename);
+                return Some(p);
             }
             // Legacy fallback: file field is null, locate by time-prefix.
             let compact_time = p.time.replace(':', "");

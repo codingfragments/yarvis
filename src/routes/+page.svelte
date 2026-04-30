@@ -1,22 +1,42 @@
 <script lang="ts">
 	import AppLauncher from '$lib/components/AppLauncher.svelte';
+	import ActionItem from '$lib/components/dashboard/ActionItem.svelte';
+	import Callout from '$lib/components/dashboard/Callout.svelte';
 	import { getSettingsStore } from '$lib/stores/settings.svelte';
 	import { getRefreshStore } from '$lib/stores/refresh.svelte';
-	import { readDaily, getDailyStatus } from '$lib/services/dashboard';
-	import { isTauri, openUrl } from '$lib/services/tauri';
+	import { readConfig, readDaily, getDailyStatus } from '$lib/services/dashboard';
+	import { isTauri } from '$lib/services/tauri';
+	import {
+		fmtClock,
+		fmtMinutesAway,
+		liveMinutesAway,
+		priorityRank,
+		staleness
+	} from '$lib/dashboard/format';
 	import { onMount } from 'svelte';
-	import type { ActionItem, DailyBriefing } from '$lib/types';
+	import type {
+		ActionItem as ActionItemData,
+		ActiveDealDef,
+		BriefingConfig,
+		DailyBriefing
+	} from '$lib/types';
 
 	const settings = getSettingsStore();
 	const refresh = getRefreshStore();
 
 	let briefing = $state<DailyBriefing | null>(null);
+	let config = $state<BriefingConfig | null>(null);
 	let pendingQuestions = $state(0);
 	let dailyExists = $state(true);
 	let loaded = $state(false);
 	let loadError = $state<string | null>(null);
 	let now = $state(new Date());
 	let funShowJoke = $state(false);
+
+	function dealById(id: string | null | undefined): ActiveDealDef | null {
+		if (!id || !config) return null;
+		return config.active_deals.find((d) => d.id === id) ?? null;
+	}
 
 	onMount(() => {
 		if (!isTauri()) return;
@@ -37,11 +57,12 @@
 			const check = () => (settings.loaded ? resolve() : setTimeout(check, 50));
 			check();
 		});
-		const { daily_dir, briefings_dir } = settings.current;
+		const { daily_dir, daily_src_dir, briefings_dir } = settings.current;
 		try {
-			const [b, status] = await Promise.allSettled([
+			const [b, status, c] = await Promise.allSettled([
 				readDaily(daily_dir, briefings_dir),
-				getDailyStatus(daily_dir)
+				getDailyStatus(daily_dir),
+				readConfig(daily_src_dir)
 			]);
 			if (status.status === 'fulfilled') {
 				pendingQuestions = status.value.pending_questions;
@@ -53,6 +74,7 @@
 				// only flag a real error when the file should be there
 				loadError = String(b.reason);
 			}
+			if (c.status === 'fulfilled') config = c.value;
 			loaded = true;
 		} catch (e) {
 			loadError = String(e);
@@ -62,10 +84,11 @@
 
 	async function softRefreshHome() {
 		if (!isTauri() || !settings.loaded) return;
-		const { daily_dir, briefings_dir } = settings.current;
-		const [b, status] = await Promise.allSettled([
+		const { daily_dir, daily_src_dir, briefings_dir } = settings.current;
+		const [b, status, c] = await Promise.allSettled([
 			readDaily(daily_dir, briefings_dir),
-			getDailyStatus(daily_dir)
+			getDailyStatus(daily_dir),
+			readConfig(daily_src_dir)
 		]);
 		if (status.status === 'fulfilled') {
 			pendingQuestions = status.value.pending_questions;
@@ -74,44 +97,10 @@
 		if (b.status === 'fulfilled') {
 			briefing = b.value;
 		}
+		if (c.status === 'fulfilled') config = c.value;
 	}
 
-	function priorityRank(p: string): number {
-		return p === 'critical' ? 0 : p === 'high' ? 1 : p === 'medium' ? 2 : 3;
-	}
-
-	function liveMinutesAway(startsAt: string | null | undefined): number | null {
-		if (!startsAt) return null;
-		const t = Date.parse(startsAt);
-		if (Number.isNaN(t)) return null;
-		return Math.round((t - now.getTime()) / 60000);
-	}
-
-	function fmtMinutesAway(m: number | null): string {
-		if (m === null) return '';
-		if (m <= 0) return 'now';
-		if (m < 60) return `${m} min`;
-		const h = Math.floor(m / 60);
-		const mm = m % 60;
-		return mm === 0 ? `${h}h` : `${h}h ${mm}m`;
-	}
-
-	function staleness(generatedAt: string | null | undefined): { label: string; tone: 'fresh' | 'aging' | 'stale' } {
-		if (!generatedAt) return { label: '—', tone: 'stale' };
-		const ageMs = now.getTime() - Date.parse(generatedAt);
-		if (Number.isNaN(ageMs)) return { label: '—', tone: 'stale' };
-		const mins = Math.max(0, Math.round(ageMs / 60000));
-		if (mins < 30) return { label: `${mins}m`, tone: 'fresh' };
-		if (mins < 240) {
-			const h = Math.floor(mins / 60);
-			const m = mins % 60;
-			return { label: `${h}h ${m}m`, tone: 'aging' };
-		}
-		const h = Math.round(mins / 60);
-		return { label: `${h}h`, tone: 'stale' };
-	}
-
-	const topActions = $derived.by((): ActionItem[] => {
+	const topActions = $derived.by((): ActionItemData[] => {
 		if (!briefing) return [];
 		return [...briefing.action_items]
 			.sort((a, c) => priorityRank(a.priority) - priorityRank(c.priority))
@@ -140,8 +129,8 @@
 	<div class="w-full max-w-3xl flex flex-col gap-3">
 		{#if briefing}
 			{@const b = briefing}
-			{@const stale = staleness(b.meta.generated_at)}
-			{@const nextMins = liveMinutesAway(b.meta.next_meeting?.starts_at)}
+			{@const stale = staleness(b.meta.generated_at, now.getTime())}
+			{@const nextMins = liveMinutesAway(b.meta.next_meeting?.starts_at, now.getTime())}
 
 			<!-- A. Greeting banner -->
 			{#if b.greeting}
@@ -164,7 +153,7 @@
 					href="/dashboard#calendar"
 					class="rounded-xl bg-base-200/40 border border-base-content/5 p-3 flex flex-col gap-1 hover:bg-base-200/60 transition-colors no-underline"
 				>
-					<div class="text-[10px] uppercase tracking-wider text-base-content/40 font-semibold">
+					<div class="text-xs uppercase tracking-wider text-base-content/40 font-semibold">
 						Next meeting
 					</div>
 					{#if b.meta.next_meeting && nextMins !== null}
@@ -178,8 +167,8 @@
 							>
 								{fmtMinutesAway(nextMins)}
 							</span>
-							<span class="text-[10px] text-base-content/40">
-								· {b.meta.next_meeting.starts_at.slice(11, 16)}
+							<span class="text-xs text-base-content/40">
+								· {fmtClock(b.meta.next_meeting.starts_at)}
 							</span>
 						</div>
 					{:else}
@@ -192,7 +181,7 @@
 					href="/dashboard"
 					class="rounded-xl bg-base-200/40 border border-base-content/5 p-3 flex flex-col gap-1 hover:bg-base-200/60 transition-colors no-underline"
 				>
-					<div class="text-[10px] uppercase tracking-wider text-base-content/40 font-semibold">
+					<div class="text-xs uppercase tracking-wider text-base-content/40 font-semibold">
 						Day pulse
 					</div>
 					<div class="flex items-baseline gap-3 text-sm font-mono mt-0.5">
@@ -200,7 +189,7 @@
 						<span title="Conflicts">⚠ {b.calendar?.conflicts.length ?? 0}</span>
 						<span title="Action items">⚡ {b.action_items.length}</span>
 					</div>
-					<div class="text-[10px] mt-1">
+					<div class="text-xs mt-1">
 						<span
 							class:text-success={stale.tone === 'fresh'}
 							class:text-warning={stale.tone === 'aging'}
@@ -217,7 +206,7 @@
 					href="/dashboard#summary"
 					class="rounded-xl bg-base-200/40 border border-base-content/5 p-3 flex flex-col gap-1 hover:bg-base-200/60 transition-colors no-underline"
 				>
-					<div class="text-[10px] uppercase tracking-wider text-base-content/40 font-semibold">
+					<div class="text-xs uppercase tracking-wider text-base-content/40 font-semibold">
 						Questions
 					</div>
 					{#if pendingQuestions > 0}
@@ -225,7 +214,7 @@
 							<span class="text-base font-mono text-warning">{pendingQuestions}</span>
 							<span class="text-xs text-base-content/60">open</span>
 						</div>
-						<div class="text-[10px] text-base-content/40">Click to answer →</div>
+						<div class="text-xs text-base-content/40">Click to answer →</div>
 					{:else}
 						<div class="text-sm text-base-content/40 italic">All caught up</div>
 					{/if}
@@ -236,36 +225,14 @@
 			{#if topActions.length > 0}
 				<section class="rounded-xl bg-base-200/40 border border-base-content/5 p-3">
 					<div class="flex items-center gap-2 mb-2">
-						<span class="text-[10px] uppercase tracking-wider text-base-content/40 font-semibold">
+						<span class="text-xs uppercase tracking-wider text-base-content/40 font-semibold">
 							⚡ Top actions
 						</span>
-						<a href="/dashboard" class="text-[10px] text-primary hover:underline ml-auto">all →</a>
+						<a href="/dashboard" class="text-xs text-primary hover:underline ml-auto">all →</a>
 					</div>
 					<ul class="flex flex-col gap-1.5">
 						{#each topActions as a}
-							<li class="flex items-start gap-2 text-xs">
-								<span
-									class="inline-block w-1.5 h-1.5 rounded-full mt-1.5 shrink-0"
-									class:bg-error={a.priority === 'critical'}
-									class:bg-warning={a.priority === 'high'}
-									class:bg-info={a.priority === 'medium'}
-									class:bg-base-content={a.priority === 'low'}
-									class:bg-opacity-40={a.priority === 'low'}
-								></span>
-								{#if a.url}
-									<button
-										class="flex-1 min-w-0 text-left text-base-content/85 leading-snug break-words hover:text-primary transition-colors"
-										onclick={() => openUrl(a.url)}
-									>
-										{a.text}
-									</button>
-								{:else}
-									<p class="flex-1 min-w-0 text-base-content/85 leading-snug break-words">{a.text}</p>
-								{/if}
-								{#if a.deadline}
-									<span class="text-[10px] text-base-content/45 font-mono shrink-0 mt-0.5">{a.deadline}</span>
-								{/if}
-							</li>
+							<ActionItem compact action={a} deal={dealById(a.deal_tag)} />
 						{/each}
 					</ul>
 				</section>
@@ -274,14 +241,11 @@
 			<!-- Focus + Fun -->
 			<div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
 				{#if b.focus_prompt}
-					<section class="rounded-xl bg-primary/5 border-l-4 border-primary px-4 py-3">
-						<div class="text-[10px] uppercase tracking-wider text-primary/70 font-semibold mb-1.5">
-							🎯 Today's focus
-						</div>
+					<Callout tone="primary" icon="🎯" title="Today's focus">
 						<p class="text-xs text-base-content/80 leading-relaxed whitespace-pre-wrap break-words">
 							{b.focus_prompt}
 						</p>
-					</section>
+					</Callout>
 				{/if}
 
 				{#if b.fun && (b.fun.fact || b.fun.joke)}
@@ -290,7 +254,7 @@
 						onclick={() => (funShowJoke = !funShowJoke)}
 						title="Click to flip"
 					>
-						<div class="text-[10px] uppercase tracking-wider text-base-content/50 font-semibold mb-1.5">
+						<div class="text-xs uppercase tracking-wider text-base-content/50 font-semibold mb-1.5">
 							{funShowJoke ? '😄 Joke' : '✨ Fun fact'}
 						</div>
 						<p class="text-xs text-base-content/80 leading-relaxed break-words">

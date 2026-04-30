@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { DailyBriefing } from '$lib/types';
-	import { fmtMinutesAway, liveMinutesAway, staleness } from '$lib/dashboard/format';
+	import { fmtClock, fmtMinutesAway, liveMinutesAway, staleness } from '$lib/dashboard/format';
 
 	interface Props {
 		briefing: DailyBriefing | null;
@@ -19,8 +19,8 @@
 	<div class="flex-1 min-w-0">
 		<h1 class="text-base font-semibold text-base-content leading-tight">Dashboard</h1>
 		{#if briefing}
-			<p class="text-[10px] text-base-content/50 font-mono">
-				{briefing.meta.briefing_date} · {now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+			<p class="text-xs text-base-content/50 font-mono">
+				{briefing.meta.briefing_date} · {fmtClock(now)}
 			</p>
 		{/if}
 	</div>
@@ -45,7 +45,7 @@
 		{/if}
 
 		<span
-			class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium font-mono"
+			class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium font-mono"
 			class:bg-success={stale.tone === 'fresh'}
 			class:text-success-content={stale.tone === 'fresh'}
 			class:bg-warning={stale.tone === 'aging'}
@@ -59,12 +59,12 @@
 	{/if}
 
 	<button
-		class="btn btn-ghost btn-sm text-[11px] gap-1.5 hidden sm:inline-flex"
+		class="btn btn-ghost btn-sm text-xs gap-1.5 hidden sm:inline-flex"
 		onclick={onPalette}
 		title="Search today (⌘K)"
 	>
 		🔎
-		<kbd class="text-[9px] font-mono px-1 py-0.5 bg-base-300/50 rounded border border-base-content/10">⌘K</kbd>
+		<kbd class="text-xs font-mono px-1 py-0.5 bg-base-300/50 rounded border border-base-content/10">⌘K</kbd>
 	</button>
 	<div class="relative">
 		<button

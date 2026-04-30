@@ -32,7 +32,7 @@
 {#if href}
 	{#if variant === 'pill'}
 		<a
-			class="inline-flex items-center gap-1 rounded-full bg-base-300/50 hover:bg-base-300 transition-colors px-2 py-0.5 text-[11px] text-base-content/70 hover:text-base-content"
+			class="inline-flex items-center gap-1 rounded-full bg-base-300/50 hover:bg-base-300 transition-colors px-2 py-0.5 text-xs text-base-content/70 hover:text-base-content"
 			href={href}
 			title={title ?? label}
 			onclick={open}
@@ -48,7 +48,7 @@
 			onclick={open}
 		>
 			{#if label}<span>{label}</span>{/if}
-			<span class="text-[10px] opacity-60">{icon}</span>
+			<span class="text-xs opacity-60">{icon}</span>
 		</a>
 	{/if}
 {/if}

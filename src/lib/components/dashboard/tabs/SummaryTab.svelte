@@ -1,8 +1,11 @@
 <script lang="ts">
 	import type { DailyBriefing, DashboardQuestion } from '$lib/types';
 	import SectionCard from '../SectionCard.svelte';
-	import QuestionStatusPill from '../QuestionStatusPill.svelte';
+	import Chip from '../Chip.svelte';
+	import Callout from '../Callout.svelte';
+	import EmptyState from '../EmptyState.svelte';
 	import MarkdownRenderer from '$lib/components/MarkdownRenderer.svelte';
+	import { fmtClock, questionTone } from '$lib/dashboard/format';
 
 	interface Props {
 		briefing: DailyBriefing;
@@ -24,20 +27,19 @@
 <div class="flex flex-col gap-4">
 	{#if briefing.greeting}
 		<section class="rounded-xl bg-gradient-to-br from-primary/10 via-base-200/40 to-secondary/10 border border-base-content/5 px-5 py-4">
-			<h2 class="text-lg font-semibold text-base-content">{briefing.greeting.text}</h2>
+			<h2 class="text-base font-semibold text-base-content leading-snug">{briefing.greeting.text}</h2>
 			{#if briefing.greeting.context_note}
-				<div class="mt-2 rounded-lg bg-base-100/60 border border-base-content/10 px-3.5 py-2 text-sm text-base-content/80">
+				<p class="mt-1.5 text-xs text-base-content/70 leading-relaxed break-words">
 					💡 {briefing.greeting.context_note}
-				</div>
+				</p>
 			{/if}
 		</section>
 	{/if}
 
 	{#if briefing.focus_prompt}
-		<section class="rounded-xl bg-primary/5 border-l-4 border-primary px-5 py-4">
-			<div class="text-[10px] uppercase tracking-wider text-primary/70 font-semibold mb-1.5">Today's focus</div>
-			<p class="text-sm text-base-content/80 leading-relaxed whitespace-pre-wrap">{briefing.focus_prompt}</p>
-		</section>
+		<Callout tone="primary" title="Today's focus">
+			<p class="text-xs text-base-content/80 leading-relaxed whitespace-pre-wrap">{briefing.focus_prompt}</p>
+		</Callout>
 	{/if}
 
 	{#if questions.length > 0}
@@ -48,17 +50,18 @@
 				? `${pendingCount} pending of ${questions.length}`
 				: `All ${questions.length} answered`}
 			count={visibleQuestions.length}
+			collapsible
 		>
 			{#snippet actions()}
 				<button
-					class="btn btn-ghost btn-xs h-7 min-h-7 text-[11px] gap-1.5 normal-case"
+					class="btn btn-ghost btn-xs h-7 min-h-7 text-xs gap-1.5 normal-case"
 					class:btn-active={showOpenQuestionsOnly}
 					onclick={() => (showOpenQuestionsOnly = !showOpenQuestionsOnly)}
 					aria-pressed={showOpenQuestionsOnly}
 					title="Toggle filter"
 				>
 					<span
-						class="inline-block w-3 h-3 rounded-sm border border-base-content/30 flex items-center justify-center text-[10px] leading-none"
+						class="inline-block w-3 h-3 rounded-sm border border-base-content/30 flex items-center justify-center text-xs leading-none"
 						class:bg-primary={showOpenQuestionsOnly}
 						class:border-primary={showOpenQuestionsOnly}
 						class:text-primary-content={showOpenQuestionsOnly}
@@ -70,11 +73,11 @@
 			{/snippet}
 
 			{#if visibleQuestions.length === 0}
-				<p class="text-xs text-base-content/40 italic">
-					{showOpenQuestionsOnly
+				<EmptyState
+					message={showOpenQuestionsOnly
 						? 'No open questions. Toggle the filter to see answered ones.'
 						: 'No questions today.'}
-				</p>
+				/>
 			{:else}
 				<ul class="flex flex-col gap-2.5">
 					{#each visibleQuestions as q (q.title)}
@@ -90,11 +93,11 @@
 							class:opacity-70={q.status === 'PROCESSED'}
 						>
 							<div class="flex items-start gap-2 mb-1.5">
-								<QuestionStatusPill status={q.status} />
+								<Chip variant="status" tone={questionTone(q.status)} labelOverride={q.status.toLowerCase()} />
 								<h4 class="flex-1 text-sm font-medium text-base-content leading-snug">{q.title}</h4>
 								{#if editable}
 									<button
-										class="shrink-0 btn btn-xs h-7 min-h-7 normal-case text-[11px]"
+										class="shrink-0 btn btn-xs h-7 min-h-7 normal-case text-xs"
 										class:btn-primary={q.status === 'PENDING'}
 										class:btn-ghost={q.status === 'ANSWERED'}
 										onclick={() => onEditQuestion(q)}
@@ -115,16 +118,15 @@
 							{/if}
 
 							{#if q.answer}
-								<div class="mt-2.5 rounded-md bg-success/5 border-l-2 border-success/50 px-3 py-2">
-									<div class="text-[10px] uppercase tracking-wider text-success/80 font-semibold mb-0.5">
-										Your answer
-									</div>
-									<p class="text-xs text-base-content/85 whitespace-pre-wrap leading-snug">{q.answer}</p>
+								<div class="mt-2.5">
+									<Callout tone="success" title="Your answer">
+										<p class="text-xs text-base-content/85 whitespace-pre-wrap leading-snug">{q.answer}</p>
+									</Callout>
 								</div>
 							{/if}
 
 							{#if q.asked || q.run}
-								<div class="flex items-center gap-1.5 text-[10px] text-base-content/35 font-mono mt-2">
+								<div class="flex items-center gap-1.5 text-xs text-base-content/35 font-mono mt-2">
 									{#if q.asked}<span>asked {q.asked}</span>{/if}
 									{#if q.run}<span>· run {q.run}</span>{/if}
 								</div>
@@ -136,9 +138,9 @@
 		</SectionCard>
 	{/if}
 
-	<footer class="text-[10px] text-base-content/40 pt-2">
+	<footer class="text-xs text-base-content/40 pt-2">
 		Generated {briefing.meta.generated_at} · timezone {briefing.meta.timezone ?? '?'}
 		· run {briefing.meta.run_type ?? '?'} #{briefing.meta.update_sequence ?? 1}
-		{#if lastLoaded}· loaded {lastLoaded.toLocaleTimeString()}{/if}
+		{#if lastLoaded}· loaded {fmtClock(lastLoaded)}{/if}
 	</footer>
 </div>

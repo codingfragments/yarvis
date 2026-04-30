@@ -6,6 +6,20 @@
 @plugin "./catppuccin.latte.ts";
 @plugin "./catppuccin.macchiato.ts";
 
+/* Type scale: Tailwind defaults bumped one step up (~13% on average) for
+   the desktop dashboard. Single source of truth so every text-xs / sm /
+   base / lg in the app moves together. */
+@theme {
+	--text-xs: 13px;             /* was 12px */
+	--text-xs--line-height: 20px;
+	--text-sm: 16px;             /* was 14px */
+	--text-sm--line-height: 24px;
+	--text-base: 18px;           /* was 16px */
+	--text-base--line-height: 28px;
+	--text-lg: 20px;             /* was 18px */
+	--text-lg--line-height: 30px;
+}
+
 @layer base {
 	body {
 		font-family: 'Inter', 'SF Pro', system-ui, sans-serif;

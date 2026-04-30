@@ -40,7 +40,7 @@
 			<span>{key}</span>
 			{#if count !== null && count !== undefined && count > 0}
 				<span
-					class="rounded-full bg-base-300/60 px-1.5 py-0.5 text-[10px] font-mono"
+					class="rounded-full bg-base-300/60 px-1.5 py-0.5 text-xs font-mono"
 					class:bg-primary={active}
 					class:text-primary-content={active}
 				>

@@ -1,7 +1,10 @@
 <script lang="ts">
 	import type { ActiveDealDef, SlackChannel, SlackSection } from '$lib/types';
-	import DealPill from '../DealPill.svelte';
+	import AccentRow from '../AccentRow.svelte';
+	import Chip from '../Chip.svelte';
+	import EmptyState from '../EmptyState.svelte';
 	import ExternalLink from '../ExternalLink.svelte';
+	import { activityTone, fmtClock, rowAccent } from '$lib/dashboard/format';
 
 	interface Props {
 		slack: SlackSection;
@@ -16,41 +19,29 @@
 
 <div class="flex flex-col gap-3">
 	{#if slack.since && !lensActive}
-		<p class="text-[10px] text-base-content/50">Since {slack.since}</p>
+		<p class="text-xs text-base-content/50">Since {slack.since}</p>
 	{/if}
 	{#if channels.length === 0}
-		<p class="text-xs text-base-content/40 italic">
-			{lensActive ? `No slack channels for ${lensName}.` : 'No slack activity.'}
-		</p>
+		<EmptyState items="slack channels" {lensActive} {lensName} fallback="No slack activity." />
 	{/if}
 	<ul class="flex flex-col gap-3">
 		{#each channels as ch}
 			{@const deal = dealById(ch.deal_tag)}
-			<li class="rounded-lg bg-base-100/30 border border-base-content/5 p-3">
+			<AccentRow accent={rowAccent({ activityLevel: ch.activity_level })}>
 				<div class="flex items-center gap-2 mb-2 flex-wrap">
 					<span class="text-xs font-mono font-medium text-base-content/85">{ch.channel_name}</span>
-					<DealPill {deal} fallbackId={ch.deal_tag} />
-					<span
-						class="text-[10px] uppercase tracking-wider rounded-full px-1.5 py-0.5"
-						class:bg-success={ch.activity_level === 'high'}
-						class:bg-warning={ch.activity_level === 'medium'}
-						class:bg-base-300={ch.activity_level === 'low' || ch.activity_level === 'quiet'}
-						class:text-success-content={ch.activity_level === 'high'}
-						class:text-warning-content={ch.activity_level === 'medium'}
-					>
-						{ch.activity_level}
-					</span>
-					{#if ch.url}<ExternalLink href={ch.url} label="open" />{/if}
+					<Chip {deal} fallbackId={ch.deal_tag} />
+					<Chip variant="status" tone={activityTone(ch.activity_level)} labelOverride={ch.activity_level} />
 				</div>
 				{#if ch.messages.length === 0}
-					<p class="text-[11px] text-base-content/40">No messages.</p>
+					<EmptyState message="No messages." />
 				{:else}
 					<ul class="flex flex-col gap-1.5">
 						{#each ch.messages as msg}
-							<li class="text-[11px] border-l border-base-content/10 pl-2.5">
+							<li class="text-xs border-l border-base-content/10 pl-2.5">
 								<div class="flex items-center gap-1.5 mb-0.5">
 									{#if msg.author}<span class="font-medium text-base-content/80">{msg.author}</span>{/if}
-									{#if msg.timestamp}<span class="text-base-content/40 text-[10px]">{msg.timestamp.slice(11, 16)}</span>{/if}
+									{#if msg.timestamp}<span class="text-base-content/40 text-xs">{fmtClock(msg.timestamp)}</span>{/if}
 								</div>
 								<p class="text-base-content/65 leading-snug break-words">{msg.summary}</p>
 								{#if msg.links.length > 0}
@@ -63,22 +54,29 @@
 						{/each}
 					</ul>
 				{/if}
-			</li>
+
+				{#snippet trailing()}
+					{#if ch.url}<ExternalLink href={ch.url} label="open" />{/if}
+				{/snippet}
+			</AccentRow>
 		{/each}
 	</ul>
 	{#if !lensActive && slack.dms.length > 0}
 		<div>
-			<div class="text-[10px] uppercase tracking-wider text-base-content/50 font-semibold mb-2">DMs</div>
+			<div class="text-xs uppercase tracking-wider text-base-content/50 font-semibold mb-2">DMs</div>
 			<ul class="flex flex-col gap-1.5">
 				{#each slack.dms as dm}
-					<li class="rounded-lg bg-base-100/30 px-3 py-2 text-xs">
+					<AccentRow accent="border-l-base-content/30">
 						<div class="flex items-center gap-2 mb-0.5">
 							<span class="font-medium text-base-content/80">{dm.with}</span>
-							{#if dm.url}<ExternalLink href={dm.url} label="open" />{/if}
 						</div>
-						<p class="text-[11px] text-base-content/60 break-words">{dm.summary}</p>
-						{#if dm.action}<p class="text-[11px] text-base-content/85 font-medium mt-0.5 break-words">→ {dm.action}</p>{/if}
-					</li>
+						<p class="text-xs text-base-content/60 break-words">{dm.summary}</p>
+						{#if dm.action}<p class="text-xs text-base-content/85 font-medium mt-0.5 break-words">→ {dm.action}</p>{/if}
+
+						{#snippet trailing()}
+							{#if dm.url}<ExternalLink href={dm.url} label="open" />{/if}
+						{/snippet}
+					</AccentRow>
 				{/each}
 			</ul>
 		</div>

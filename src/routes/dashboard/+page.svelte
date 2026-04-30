@@ -13,6 +13,7 @@
 	import CommandPalette from '$lib/components/dashboard/CommandPalette.svelte';
 	import DashboardHeader from '$lib/components/dashboard/DashboardHeader.svelte';
 	import DashboardSidebar from '$lib/components/dashboard/DashboardSidebar.svelte';
+	import Loading from '$lib/components/dashboard/Loading.svelte';
 	import DashboardTabStrip, { TAB_KEYS, type TabKey } from '$lib/components/dashboard/DashboardTabStrip.svelte';
 	import SummaryTab from '$lib/components/dashboard/tabs/SummaryTab.svelte';
 	import CalendarTab from '$lib/components/dashboard/tabs/CalendarTab.svelte';
@@ -125,7 +126,7 @@
 </script>
 
 <div
-	class="max-w-7xl mx-auto px-4 md:h-[calc(100dvh-6rem)] md:flex md:flex-col"
+	class="max-w-[105rem] mx-auto px-4 md:h-[calc(100dvh-6rem)] md:flex md:flex-col"
 >
 	<DashboardHeader
 		briefing={dashboard.briefing}
@@ -173,7 +174,7 @@
 				<DashboardTabStrip {tab} counts={view.counts} onSelect={(k) => (tab = k)} />
 
 				<!-- Tab content -->
-				<div class="md:flex-1 md:min-w-0 md:overflow-y-auto md:min-h-0 pt-4">
+				<div class="md:flex-1 md:min-w-0 md:overflow-y-auto md:min-h-0 pt-4 pr-3">
 					{#if tab === 'summary'}
 						<SummaryTab
 							briefing={b}
@@ -226,9 +227,7 @@
 			<p class="text-sm text-base-content/60">No daily.json yet — run the briefing skill; auto-refresh will pick it up.</p>
 		</div>
 	{:else if dashboard.loading}
-		<div class="flex justify-center py-12">
-			<span class="loading loading-dots loading-md"></span>
-		</div>
+		<Loading />
 	{/if}
 </div>
 
