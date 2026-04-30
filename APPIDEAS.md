@@ -29,3 +29,10 @@ Basic dashboard is implemented but
 - settings editor
 - notes linked
 - todo and activity overlay
+
+- md popup as used in briefing, should really support key navigation
+  - esc closes
+  - keyboard nav (up/down pageUP/pageDown)
+  - cmd-o open in finder
+- on Calender
+  - indication of current time
