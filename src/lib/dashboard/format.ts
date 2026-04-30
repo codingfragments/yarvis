@@ -86,3 +86,24 @@ export function activityTone(level: string): ChipTone {
 	if (level === 'medium') return 'info';
 	return 'neutral';
 }
+
+/**
+ * Render a clock-style HH:MM from either an ISO-ish string or a Date.
+ *
+ * Strings: pulls the time portion via the `T` separator (handles "…T15:00",
+ * "…T15:00:00", "…T15:00:00.123+02:00", etc.) so we don't depend on the
+ * fragile `slice(11, 16)` position assumption.
+ *
+ * Dates: formats in the user's local timezone, two-digit padded.
+ */
+export function fmtClock(input: Date | string | null | undefined): string {
+	if (input === null || input === undefined || input === '') return '';
+	if (typeof input === 'string') {
+		const m = input.match(/T(\d{2}:\d{2})/);
+		if (m) return m[1];
+		return input.slice(0, 5);
+	}
+	const hh = String(input.getHours()).padStart(2, '0');
+	const mm = String(input.getMinutes()).padStart(2, '0');
+	return `${hh}:${mm}`;
+}

@@ -5,7 +5,7 @@
 	import Callout from '../Callout.svelte';
 	import EmptyState from '../EmptyState.svelte';
 	import MarkdownRenderer from '$lib/components/MarkdownRenderer.svelte';
-	import { questionTone } from '$lib/dashboard/format';
+	import { fmtClock, questionTone } from '$lib/dashboard/format';
 
 	interface Props {
 		briefing: DailyBriefing;
@@ -141,6 +141,6 @@
 	<footer class="text-xs text-base-content/40 pt-2">
 		Generated {briefing.meta.generated_at} · timezone {briefing.meta.timezone ?? '?'}
 		· run {briefing.meta.run_type ?? '?'} #{briefing.meta.update_sequence ?? 1}
-		{#if lastLoaded}· loaded {lastLoaded.toLocaleTimeString()}{/if}
+		{#if lastLoaded}· loaded {fmtClock(lastLoaded)}{/if}
 	</footer>
 </div>

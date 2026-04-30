@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { DailyBriefing } from '$lib/types';
-	import { fmtMinutesAway, liveMinutesAway, staleness } from '$lib/dashboard/format';
+	import { fmtClock, fmtMinutesAway, liveMinutesAway, staleness } from '$lib/dashboard/format';
 
 	interface Props {
 		briefing: DailyBriefing | null;
@@ -20,7 +20,7 @@
 		<h1 class="text-base font-semibold text-base-content leading-tight">Dashboard</h1>
 		{#if briefing}
 			<p class="text-xs text-base-content/50 font-mono">
-				{briefing.meta.briefing_date} · {now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+				{briefing.meta.briefing_date} · {fmtClock(now)}
 			</p>
 		{/if}
 	</div>

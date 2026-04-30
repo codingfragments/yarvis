@@ -4,7 +4,7 @@
 	import Chip from '../Chip.svelte';
 	import EmptyState from '../EmptyState.svelte';
 	import ExternalLink from '../ExternalLink.svelte';
-	import { activityTone, rowAccent } from '$lib/dashboard/format';
+	import { activityTone, fmtClock, rowAccent } from '$lib/dashboard/format';
 
 	interface Props {
 		slack: SlackSection;
@@ -41,7 +41,7 @@
 							<li class="text-xs border-l border-base-content/10 pl-2.5">
 								<div class="flex items-center gap-1.5 mb-0.5">
 									{#if msg.author}<span class="font-medium text-base-content/80">{msg.author}</span>{/if}
-									{#if msg.timestamp}<span class="text-base-content/40 text-xs">{msg.timestamp.slice(11, 16)}</span>{/if}
+									{#if msg.timestamp}<span class="text-base-content/40 text-xs">{fmtClock(msg.timestamp)}</span>{/if}
 								</div>
 								<p class="text-base-content/65 leading-snug break-words">{msg.summary}</p>
 								{#if msg.links.length > 0}

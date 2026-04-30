@@ -6,6 +6,13 @@
 	import { getRefreshStore } from '$lib/stores/refresh.svelte';
 	import { readConfig, readDaily, getDailyStatus } from '$lib/services/dashboard';
 	import { isTauri } from '$lib/services/tauri';
+	import {
+		fmtClock,
+		fmtMinutesAway,
+		liveMinutesAway,
+		priorityRank,
+		staleness
+	} from '$lib/dashboard/format';
 	import { onMount } from 'svelte';
 	import type {
 		ActionItem as ActionItemData,
@@ -93,41 +100,6 @@
 		if (c.status === 'fulfilled') config = c.value;
 	}
 
-	function priorityRank(p: string): number {
-		return p === 'critical' ? 0 : p === 'high' ? 1 : p === 'medium' ? 2 : 3;
-	}
-
-	function liveMinutesAway(startsAt: string | null | undefined): number | null {
-		if (!startsAt) return null;
-		const t = Date.parse(startsAt);
-		if (Number.isNaN(t)) return null;
-		return Math.round((t - now.getTime()) / 60000);
-	}
-
-	function fmtMinutesAway(m: number | null): string {
-		if (m === null) return '';
-		if (m <= 0) return 'now';
-		if (m < 60) return `${m} min`;
-		const h = Math.floor(m / 60);
-		const mm = m % 60;
-		return mm === 0 ? `${h}h` : `${h}h ${mm}m`;
-	}
-
-	function staleness(generatedAt: string | null | undefined): { label: string; tone: 'fresh' | 'aging' | 'stale' } {
-		if (!generatedAt) return { label: '—', tone: 'stale' };
-		const ageMs = now.getTime() - Date.parse(generatedAt);
-		if (Number.isNaN(ageMs)) return { label: '—', tone: 'stale' };
-		const mins = Math.max(0, Math.round(ageMs / 60000));
-		if (mins < 30) return { label: `${mins}m`, tone: 'fresh' };
-		if (mins < 240) {
-			const h = Math.floor(mins / 60);
-			const m = mins % 60;
-			return { label: `${h}h ${m}m`, tone: 'aging' };
-		}
-		const h = Math.round(mins / 60);
-		return { label: `${h}h`, tone: 'stale' };
-	}
-
 	const topActions = $derived.by((): ActionItemData[] => {
 		if (!briefing) return [];
 		return [...briefing.action_items]
@@ -157,8 +129,8 @@
 	<div class="w-full max-w-3xl flex flex-col gap-3">
 		{#if briefing}
 			{@const b = briefing}
-			{@const stale = staleness(b.meta.generated_at)}
-			{@const nextMins = liveMinutesAway(b.meta.next_meeting?.starts_at)}
+			{@const stale = staleness(b.meta.generated_at, now.getTime())}
+			{@const nextMins = liveMinutesAway(b.meta.next_meeting?.starts_at, now.getTime())}
 
 			<!-- A. Greeting banner -->
 			{#if b.greeting}
@@ -196,7 +168,7 @@
 								{fmtMinutesAway(nextMins)}
 							</span>
 							<span class="text-xs text-base-content/40">
-								· {b.meta.next_meeting.starts_at.slice(11, 16)}
+								· {fmtClock(b.meta.next_meeting.starts_at)}
 							</span>
 						</div>
 					{:else}
