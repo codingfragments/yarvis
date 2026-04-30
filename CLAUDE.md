@@ -70,6 +70,7 @@ A small shared kit lives under `src/lib/components/dashboard/`. Extend these bef
 - **`SectionCard`** — collapsible container with header (icon, title, count, subtitle, actions, fillHeight).
 - **`Overlay`** — modal shell. Backdrop, click-outside-close, Esc-to-close, default header chrome (icon/title/subtitle/actions/close), `header`/`footer` snippet overrides. Used by `MarkdownViewer`, `QuestionEditor`, `CommandPalette`.
 - **`EmptyState`** — placeholder line for empty collections. Lens-aware mode (`items`, `lensActive`, `lensName`, `fallback`) composes `No {items} for {lensName}.` automatically; plain mode takes a `message`.
+- **`Loading`** — centred async-fetch indicator. Default `spinner` variant uses daisyUI `loading-dots`; `skeleton` variant renders pulsing placeholder rows for known-shape content.
 - **`ExternalLink`** — tauri-aware link with `pill` and `inline` variants.
 
 Decorative one-offs (greeting gradient banner, calendar summary line) deliberately sit outside the kit — don't fold them in unless their meaning shifts.

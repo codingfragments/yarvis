@@ -13,6 +13,7 @@
 	import CommandPalette from '$lib/components/dashboard/CommandPalette.svelte';
 	import DashboardHeader from '$lib/components/dashboard/DashboardHeader.svelte';
 	import DashboardSidebar from '$lib/components/dashboard/DashboardSidebar.svelte';
+	import Loading from '$lib/components/dashboard/Loading.svelte';
 	import DashboardTabStrip, { TAB_KEYS, type TabKey } from '$lib/components/dashboard/DashboardTabStrip.svelte';
 	import SummaryTab from '$lib/components/dashboard/tabs/SummaryTab.svelte';
 	import CalendarTab from '$lib/components/dashboard/tabs/CalendarTab.svelte';
@@ -226,9 +227,7 @@
 			<p class="text-sm text-base-content/60">No daily.json yet — run the briefing skill; auto-refresh will pick it up.</p>
 		</div>
 	{:else if dashboard.loading}
-		<div class="flex justify-center py-12">
-			<span class="loading loading-dots loading-md"></span>
-		</div>
+		<Loading />
 	{/if}
 </div>
 

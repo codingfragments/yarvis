@@ -3,6 +3,7 @@
 	import MarkdownRenderer from '$lib/components/MarkdownRenderer.svelte';
 	import Overlay from './Overlay.svelte';
 	import EmptyState from './EmptyState.svelte';
+	import Loading from './Loading.svelte';
 
 	interface Props {
 		open: boolean;
@@ -341,9 +342,7 @@
 
 				<div bind:this={bodyEl} class="flex-1 min-h-0 overflow-y-auto px-6 py-5">
 					{#if loading}
-						<div class="flex justify-center py-16">
-							<span class="loading loading-dots loading-md"></span>
-						</div>
+						<Loading inset="lg" />
 					{:else if error}
 						<div class="rounded-lg bg-error/10 text-error border border-error/20 px-4 py-3 text-xs font-mono whitespace-pre-wrap">
 							{error}
