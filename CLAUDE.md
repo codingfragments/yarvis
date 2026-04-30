@@ -75,6 +75,22 @@ A small shared kit lives under `src/lib/components/dashboard/`. Extend these bef
 
 Decorative one-offs (greeting gradient banner, calendar summary line) deliberately sit outside the kit — don't fold them in unless their meaning shifts.
 
+### Dashboard hover / active states
+
+Pick one affordance per element class; don't invent new ones.
+
+- **Card-as-link, solid bg** — `hover:bg-base-200/60 transition-colors`. Home tiles, nav cards, etc.
+- **Card-as-link, gradient bg** — `hover:scale-[1.01] transition-transform`. Reserved for the decorative Fun card; a bg-shift can't show through the gradient.
+- **Inline text link** — `hover:underline` on `text-primary`. Used for "all →", "open" affordances inside rows.
+- **Pill chip / pill link** (`ExternalLink` pill, deal chip via `Chip` interactive) — `hover:bg-base-300 hover:text-base-content` for static pills; `Chip` interactive relies on the cursor change for hover and reserves visual feedback for the *active* state.
+- **Menu / list-item button** — `hover:bg-base-300` when the surrounding panel is `bg-base-200` (dropdown menus); `hover:bg-base-300/50` when it sits over the page bg (outline sidebar). Match the surface, don't pick at random.
+- **Subdued text button** — `hover:text-base-content` (or one opacity tier higher than the resting state) for buttons whose default colour is reduced (e.g. `text-base-content/40`).
+
+**Active state convention:**
+- `Chip` (interactive) — thicker border + semibold weight, not a bg fill: `border-2 border-base-content font-semibold`. Border colour can be overridden via inline `style:border-color` for deal-coloured chips.
+- Tab strip — `text-primary` + bottom border.
+- Pressed/toggle button — daisyUI's `btn-active`.
+
 ## Git Workflow
 
 - **main** — stable, working state only
