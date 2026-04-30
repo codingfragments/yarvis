@@ -21,3 +21,11 @@ An embedded Python code runner that executes scripts using the configured Python
 ## Terminal
 
 A built-in system terminal emulator within the Yarvis window. Provides shell access (bash/zsh/fish) without switching to a separate terminal app. Useful for running commands related to learning exercises, git operations, or system administration tasks while staying in the Yarvis workflow.
+
+## Dashboard
+
+Basic dashboard is implemented but
+
+- settings editor
+- notes linked
+- todo and activity overlay
