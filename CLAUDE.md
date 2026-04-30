@@ -91,6 +91,31 @@ Pick one affordance per element class; don't invent new ones.
 - Tab strip — `text-primary` + bottom border.
 - Pressed/toggle button — daisyUI's `btn-active`.
 
+### Dashboard padding rhythm
+
+Two horizontal scales — match your surface; don't introduce a third.
+
+- **Dashboard surfaces** (cards, callouts, rows on the home page and in tabs) → `px-3`. Used by `SectionCard` (header + content), `Callout`, `AccentRow` (`pl-3 pr-2`), home grid tiles. Tight rhythm fits the dense data layout.
+- **Modal surfaces** (overlay panels) → `px-5`. Used by `Overlay`'s default header, `QuestionEditor` body / footer, `MarkdownViewer` body. A modal has more breathing room than a tile.
+- **Page gutter** → `px-4`. Set on the page-level wrappers in `+page.svelte` and `routes/dashboard/+page.svelte`. Don't override per-section.
+
+Vertical padding is element-specific (rows are tighter, cards are looser); no single rule, but resist `py-[N]` arbitrary values when `py-2`, `py-3`, `py-4` already cover the cases.
+
+### Dashboard icon convention
+
+Icons are **emoji** — no icon library — to match the lightweight retro feel. The pixel font is reserved for the `YARVIS` logo only; icons just use the system emoji rendering.
+
+Usage forms:
+
+- **Section / header icon** — leading slot in `SectionCard`, `Callout`, `Overlay`'s default header. Sized at `text-lg leading-none` and rendered before the title. Mark `aria-hidden="true"` if the title already conveys the meaning.
+- **Inline icon** — embedded in body text (e.g. `💡 {context_note}`, `→ {action}`, `↗ open`, `⏰ {deadline}`). Inherits the surrounding text size; no special class.
+- **Action button icon** — single emoji inside a `btn-ghost btn-sm` (toolbar buttons in `MarkdownViewer`, the `⋯` menu trigger in `DashboardHeader`). Sized `text-base` or `text-lg` for visibility; pair with a `title` attribute so the action is keyboard-discoverable.
+- **Decorative emoji** — celebrations / mood signifiers (`✨ Fun fact`, `😄 Joke`, `🎯 Today's focus`, `📅 Calendar summary`). Always paired with text; never standalone.
+
+Avoid:
+- Mixing emoji with library icons in the same surface.
+- Using emoji as the only label on a clickable element (tooltip + aria-label only — no visible text → fine, but ensure the affordance is discoverable via keyboard).
+
 ## Git Workflow
 
 - **main** — stable, working state only

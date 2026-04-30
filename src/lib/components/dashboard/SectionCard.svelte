@@ -43,7 +43,7 @@
     : ''}"
 >
   <header
-    class="shrink-0 flex items-center gap-3 px-5 py-3 border-b border-base-content/5"
+    class="shrink-0 flex items-center gap-3 px-3 py-3 border-b border-base-content/5"
   >
     {#if icon}<span class="text-lg leading-none">{icon}</span>{/if}
     <div class="flex-1 min-w-0">

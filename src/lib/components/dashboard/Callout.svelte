@@ -33,7 +33,7 @@
 	const c = $derived(toneClasses(tone));
 </script>
 
-<section class="rounded-lg border-l-2 {c.rail} {c.bg} px-4 py-3">
+<section class="rounded-lg border-l-2 {c.rail} {c.bg} px-3 py-3">
 	{#if title || icon}
 		<div class="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider {c.label}">
 			{#if icon}<span aria-hidden="true">{icon}</span>{/if}
