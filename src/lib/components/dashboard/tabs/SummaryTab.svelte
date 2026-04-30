@@ -48,6 +48,7 @@
 				? `${pendingCount} pending of ${questions.length}`
 				: `All ${questions.length} answered`}
 			count={visibleQuestions.length}
+			collapsible
 		>
 			{#snippet actions()}
 				<button
