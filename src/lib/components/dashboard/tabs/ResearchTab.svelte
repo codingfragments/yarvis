@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { IntelCategory, IntelligenceCategoryDef } from '$lib/types';
 	import SectionCard from '../SectionCard.svelte';
+	import EmptyState from '../EmptyState.svelte';
 	import ExternalLink from '../ExternalLink.svelte';
 
 	interface Props {
@@ -15,9 +16,7 @@
 
 <div class="flex flex-col gap-3">
 	{#if intel.length === 0}
-		<p class="text-xs text-base-content/40 italic">
-			{lensActive ? `No intel tagged for ${lensName}.` : 'No intelligence items today.'}
-		</p>
+		<EmptyState items="intel" {lensActive} {lensName} fallback="No intelligence items today." />
 	{/if}
 	{#each intel as cat}
 		{@const def = categoryById(cat.category_id)}

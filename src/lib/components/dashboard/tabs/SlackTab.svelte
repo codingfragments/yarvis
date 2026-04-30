@@ -2,6 +2,7 @@
 	import type { ActiveDealDef, SlackChannel, SlackSection } from '$lib/types';
 	import AccentRow from '../AccentRow.svelte';
 	import Chip from '../Chip.svelte';
+	import EmptyState from '../EmptyState.svelte';
 	import ExternalLink from '../ExternalLink.svelte';
 	import { activityTone, rowAccent } from '$lib/dashboard/format';
 
@@ -21,9 +22,7 @@
 		<p class="text-xs text-base-content/50">Since {slack.since}</p>
 	{/if}
 	{#if channels.length === 0}
-		<p class="text-xs text-base-content/40 italic">
-			{lensActive ? `No slack channels for ${lensName}.` : 'No slack activity.'}
-		</p>
+		<EmptyState items="slack channels" {lensActive} {lensName} fallback="No slack activity." />
 	{/if}
 	<ul class="flex flex-col gap-3">
 		{#each channels as ch}
@@ -35,7 +34,7 @@
 					<Chip variant="status" tone={activityTone(ch.activity_level)} labelOverride={ch.activity_level} />
 				</div>
 				{#if ch.messages.length === 0}
-					<p class="text-xs text-base-content/40">No messages.</p>
+					<EmptyState message="No messages." />
 				{:else}
 					<ul class="flex flex-col gap-1.5">
 						{#each ch.messages as msg}

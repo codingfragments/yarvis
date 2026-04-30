@@ -2,6 +2,7 @@
 	import type { ActiveDealDef, EmailItem, EmailSection } from '$lib/types';
 	import AccentRow from '../AccentRow.svelte';
 	import Chip from '../Chip.svelte';
+	import EmptyState from '../EmptyState.svelte';
 	import ExternalLink from '../ExternalLink.svelte';
 	import { rowAccent } from '$lib/dashboard/format';
 
@@ -19,9 +20,7 @@
 
 <div class="flex flex-col gap-4">
 	{#if actToday.length === 0 && fyi.length === 0}
-		<p class="text-xs text-base-content/40 italic">
-			{lensActive ? `No email for ${lensName}.` : 'No email today.'}
-		</p>
+		<EmptyState items="email" {lensActive} {lensName} fallback="No email today." />
 	{/if}
 	{#if actToday.length > 0}
 		<div>

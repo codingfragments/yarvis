@@ -3,6 +3,7 @@
 	import SectionCard from './SectionCard.svelte';
 	import ActionItem from './ActionItem.svelte';
 	import Chip from './Chip.svelte';
+	import EmptyState from './EmptyState.svelte';
 	import { priorityRank } from '$lib/dashboard/format';
 
 	interface Props {
@@ -36,9 +37,7 @@
 			count={actions.length}
 		>
 			{#if actions.length === 0}
-				<p class="text-xs text-base-content/40 italic">
-					{lensActive ? `No actions for ${lensName}.` : 'Nothing queued.'}
-				</p>
+				<EmptyState items="actions" {lensActive} {lensName} fallback="Nothing queued." />
 			{:else}
 				<ul class="flex flex-col gap-2">
 					{#each [...actions].sort((a, c) => priorityRank(a.priority) - priorityRank(c.priority)) as a}

@@ -2,6 +2,7 @@
 	import type { ActiveDealDef, Calendar, CalendarEvent as CalendarEventData, Conflict } from '$lib/types';
 	import CalendarEvent from '../CalendarEvent.svelte';
 	import Callout from '../Callout.svelte';
+	import EmptyState from '../EmptyState.svelte';
 	import SectionCard from '../SectionCard.svelte';
 
 	interface Props {
@@ -49,9 +50,7 @@
 		</SectionCard>
 	{/if}
 	{#if events.length === 0}
-		<p class="text-xs text-base-content/40 italic">
-			{lensActive ? `No events for ${lensName}.` : 'No events today.'}
-		</p>
+		<EmptyState items="events" {lensActive} {lensName} fallback="No events today." />
 	{/if}
 	<ul class="flex flex-col gap-1">
 		{#each events as e}

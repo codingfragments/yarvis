@@ -3,6 +3,7 @@
 	import SectionCard from '../SectionCard.svelte';
 	import Chip from '../Chip.svelte';
 	import Callout from '../Callout.svelte';
+	import EmptyState from '../EmptyState.svelte';
 	import MarkdownRenderer from '$lib/components/MarkdownRenderer.svelte';
 	import { questionTone } from '$lib/dashboard/format';
 
@@ -72,11 +73,11 @@
 			{/snippet}
 
 			{#if visibleQuestions.length === 0}
-				<p class="text-xs text-base-content/40 italic">
-					{showOpenQuestionsOnly
+				<EmptyState
+					message={showOpenQuestionsOnly
 						? 'No open questions. Toggle the filter to see answered ones.'
 						: 'No questions today.'}
-				</p>
+				/>
 			{:else}
 				<ul class="flex flex-col gap-2.5">
 					{#each visibleQuestions as q (q.title)}

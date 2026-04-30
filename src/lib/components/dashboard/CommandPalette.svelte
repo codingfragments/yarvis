@@ -5,6 +5,7 @@
 <script lang="ts">
 	import type { SearchItem, SearchKind } from '$lib/dashboard/searchIndex';
 	import Overlay from './Overlay.svelte';
+	import EmptyState from './EmptyState.svelte';
 
 	interface Props {
 		open: boolean;
@@ -97,9 +98,9 @@
 
 	<div class="flex-1 min-h-0 overflow-y-auto">
 		{#if results.length === 0}
-			<p class="text-xs text-base-content/40 italic px-4 py-6 text-center">
-				{query.trim() ? 'No matches.' : 'Type to search.'}
-			</p>
+			<div class="px-4 py-6">
+				<EmptyState align="center" message={query.trim() ? 'No matches.' : 'Type to search.'} />
+			</div>
 		{:else}
 			<ul>
 				{#each results as r, i (r.id)}

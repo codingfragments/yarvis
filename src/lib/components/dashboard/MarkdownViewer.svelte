@@ -2,6 +2,7 @@
 	import { onDestroy, tick } from 'svelte';
 	import MarkdownRenderer from '$lib/components/MarkdownRenderer.svelte';
 	import Overlay from './Overlay.svelte';
+	import EmptyState from './EmptyState.svelte';
 
 	interface Props {
 		open: boolean;
@@ -318,7 +319,7 @@
 							Outline
 						</div>
 						{#if headings.length === 0}
-							<p class="text-xs text-base-content/40 italic px-2">No headings.</p>
+							<div class="px-2"><EmptyState message="No headings." /></div>
 						{:else}
 							<ul class="flex flex-col gap-0.5">
 								{#each headings as h}
@@ -350,7 +351,7 @@
 					{:else if content}
 						<MarkdownRenderer markdown={content} />
 					{:else}
-						<p class="text-xs text-base-content/40 italic">No content.</p>
+						<EmptyState message="No content." />
 					{/if}
 				</div>
 			</div>
