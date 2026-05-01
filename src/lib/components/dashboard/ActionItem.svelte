@@ -85,7 +85,7 @@
 	</div>
 
 	{#snippet trailing()}
-		<div class="flex items-center gap-1.5">
+		<div class="flex flex-col items-end gap-1">
 			<button
 				type="button"
 				class="inline-flex items-center gap-1 rounded-full transition-colors px-2 py-0.5 text-xs disabled:opacity-50 {justSent
