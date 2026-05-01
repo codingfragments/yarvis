@@ -46,5 +46,6 @@ export function sendActionToThings(action: ActionItem): Promise<void> {
 		tags: action.deal_tag ? [action.deal_tag] : undefined
 	});
 
+	console.log('[things] sending URL:', url);
 	return invoke<void>('open_things_url', { url });
 }
