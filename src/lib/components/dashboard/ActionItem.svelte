@@ -23,6 +23,8 @@
 
 	let toggling = $state(false);
 	let sending = $state(false);
+	let justSent = $state(false);
+	let sentTimer: ReturnType<typeof setTimeout> | null = null;
 
 	async function toggleDone() {
 		if (toggling) return;
@@ -47,6 +49,12 @@
 		sending = true;
 		try {
 			await sendActionToThings(a);
+			justSent = true;
+			if (sentTimer) clearTimeout(sentTimer);
+			sentTimer = setTimeout(() => {
+				justSent = false;
+				sentTimer = null;
+			}, 2000);
 		} catch (err) {
 			console.error('Failed to send to Things:', err);
 		} finally {
@@ -80,13 +88,15 @@
 		<div class="flex items-center gap-1.5">
 			<button
 				type="button"
-				class="inline-flex items-center gap-1 rounded-full bg-base-300/50 hover:bg-base-300 transition-colors px-2 py-0.5 text-xs text-base-content/70 hover:text-base-content disabled:opacity-50"
-				title="Send to Things"
+				class="inline-flex items-center gap-1 rounded-full transition-colors px-2 py-0.5 text-xs disabled:opacity-50 {justSent
+					? 'bg-success/20 text-success'
+					: 'bg-base-300/50 hover:bg-base-300 text-base-content/70 hover:text-base-content'}"
+				title={justSent ? 'Sent to Things' : 'Send to Things'}
 				disabled={sending}
 				onclick={onThings}
 			>
-				<span aria-hidden="true">📋</span>
-				<span>Things</span>
+				<span aria-hidden="true">{justSent ? '✓' : '📋'}</span>
+				<span>{justSent ? 'Sent' : 'Things'}</span>
 			</button>
 			{#if a.url}<ExternalLink href={a.url} label="open" />{/if}
 		</div>
