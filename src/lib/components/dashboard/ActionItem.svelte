@@ -26,11 +26,15 @@
 		if (toggling) return;
 		const next = !a.done;
 		toggling = true;
+		// Notify parent first so it can populate hide-grace state before the
+		// store's optimistic mutation flips a.done — otherwise the derived
+		// briefly sees done=true with no grace entry and reflows the list.
+		onToggle?.(a, next);
 		try {
 			await dashboard.setActionDone(settings.current.daily_dir, a, next);
-			onToggle?.(a, next);
 		} catch (err) {
 			console.error('Failed to toggle action done:', err);
+			onToggle?.(a, !next);
 		} finally {
 			toggling = false;
 		}

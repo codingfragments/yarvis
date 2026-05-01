@@ -14,7 +14,6 @@
 		staleness
 	} from '$lib/dashboard/format';
 	import { onMount } from 'svelte';
-	import { SvelteSet } from 'svelte/reactivity';
 	import type {
 		ActionItem as ActionItemData,
 		ActiveDealDef,
@@ -104,7 +103,7 @@
 	// Items the user just ticked done — kept visible for HIDE_DELAY_MS so a
 	// mistaken click can be undone before the row disappears.
 	const HIDE_DELAY_MS = 5000;
-	const pendingHide = new SvelteSet<string>();
+	let pendingHide = $state<Record<string, true>>({});
 	const hideTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
 	function actionKey(a: ActionItemData): string {
@@ -119,23 +118,23 @@
 			hideTimers.delete(key);
 		}
 		if (done) {
-			pendingHide.add(key);
+			pendingHide[key] = true;
 			hideTimers.set(
 				key,
 				setTimeout(() => {
-					pendingHide.delete(key);
+					delete pendingHide[key];
 					hideTimers.delete(key);
 				}, HIDE_DELAY_MS)
 			);
 		} else {
-			pendingHide.delete(key);
+			delete pendingHide[key];
 		}
 	}
 
 	const topActions = $derived.by((): ActionItemData[] => {
 		if (!briefing) return [];
 		return briefing.action_items
-			.filter((a) => !a.done || pendingHide.has(actionKey(a)))
+			.filter((a) => !a.done || pendingHide[actionKey(a)] === true)
 			.sort((a, c) => priorityRank(a.priority) - priorityRank(c.priority))
 			.slice(0, 3);
 	});
@@ -264,7 +263,7 @@
 						<a href="/dashboard" class="text-xs text-primary hover:underline ml-auto">all →</a>
 					</div>
 					<ul class="flex flex-col gap-1.5">
-						{#each topActions as a}
+						{#each topActions as a (a.fingerprint ?? a.id)}
 							<ActionItem compact action={a} deal={dealById(a.deal_tag)} onToggle={onActionToggled} />
 						{/each}
 					</ul>
