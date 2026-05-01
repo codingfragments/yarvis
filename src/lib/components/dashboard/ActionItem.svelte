@@ -6,6 +6,7 @@
 	import { rowAccent } from '$lib/dashboard/format';
 	import { getDashboardStore } from '$lib/stores/dashboard.svelte';
 	import { getSettingsStore } from '$lib/stores/settings.svelte';
+	import { sendActionToThings } from '$lib/services/things';
 
 	interface Props {
 		action: ActionItem;
@@ -21,6 +22,7 @@
 	const accent = $derived(rowAccent({ urgency: a.priority }));
 
 	let toggling = $state(false);
+	let sending = $state(false);
 
 	async function toggleDone() {
 		if (toggling) return;
@@ -37,6 +39,18 @@
 			onToggle?.(a, !next);
 		} finally {
 			toggling = false;
+		}
+	}
+
+	async function onThings() {
+		if (sending) return;
+		sending = true;
+		try {
+			await sendActionToThings(a);
+		} catch (err) {
+			console.error('Failed to send to Things:', err);
+		} finally {
+			sending = false;
 		}
 	}
 </script>
@@ -63,6 +77,18 @@
 	</div>
 
 	{#snippet trailing()}
-		{#if a.url}<ExternalLink href={a.url} label="open" />{/if}
+		<div class="flex items-center gap-1.5">
+			<button
+				type="button"
+				class="inline-flex items-center gap-1 rounded-full bg-base-300/50 hover:bg-base-300 transition-colors px-2 py-0.5 text-xs text-base-content/70 hover:text-base-content disabled:opacity-50"
+				title="Send to Things"
+				disabled={sending}
+				onclick={onThings}
+			>
+				<span aria-hidden="true">📋</span>
+				<span>Things</span>
+			</button>
+			{#if a.url}<ExternalLink href={a.url} label="open" />{/if}
+		</div>
 	{/snippet}
 </AccentRow>
