@@ -1,6 +1,7 @@
 import * as dashboardService from '$lib/services/dashboard';
 import { isTauri } from '$lib/services/tauri';
 import type {
+	ActionItem,
 	ActiveDealDef,
 	BriefingConfig,
 	DailyBriefing,
@@ -102,6 +103,26 @@ export function getDashboardStore() {
 				questions = await dashboardService.readQuestions(dailyDir);
 			} finally {
 				submittingAnswer = false;
+			}
+		},
+
+		async setActionDone(dailyDir: string, action: ActionItem, done: boolean) {
+			if (!isTauri() || !briefing) return;
+			const previousDone = action.done;
+			const previousCompletedAt = action.completed_at;
+			const target = briefing.action_items.find(
+				(x) => (action.fingerprint && x.fingerprint === action.fingerprint) || x.id === action.id
+			);
+			if (!target) return;
+			target.done = done;
+			target.completed_at = done ? new Date().toISOString() : null;
+			try {
+				await dashboardService.setActionDone(dailyDir, action.fingerprint, action.id, done);
+			} catch (e) {
+				target.done = previousDone;
+				target.completed_at = previousCompletedAt;
+				error = String(e);
+				throw e;
 			}
 		}
 	};

@@ -256,6 +256,12 @@ pub struct ActionItem {
     pub deal_tag: Option<String>,
     #[serde(default)]
     pub done: bool,
+    #[serde(default)]
+    pub fingerprint: Option<String>,
+    #[serde(default)]
+    pub created_at: Option<String>,
+    #[serde(default)]
+    pub completed_at: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -529,6 +535,67 @@ pub fn answer_question(
         .ok_or_else(|| format!("Question not found or already processed: {}", title))?;
     fs::write(&path, updated)
         .map_err(|e| format!("Failed to write question.md: {}", e))?;
+    Ok(())
+}
+
+/// Toggle `done` on a single action item in `daily.json`. Matches by
+/// `fingerprint` first (stable cross-run identity per the briefing schema)
+/// and falls back to positional `id` when no fingerprint is supplied or the
+/// item lacks one.
+///
+/// The file is parsed as `serde_json::Value` so unknown fields the schema
+/// gains in the future are preserved verbatim. Writes go through a tmp file
+/// followed by an atomic rename to avoid torn writes if the briefing skill
+/// happens to overwrite the file at the same moment.
+#[tauri::command]
+pub fn set_action_done(
+    daily_dir: String,
+    fingerprint: Option<String>,
+    id: String,
+    done: bool,
+) -> Result<(), String> {
+    let path = resolve_dir(&daily_dir).join("daily.json");
+    let raw = fs::read_to_string(&path)
+        .map_err(|e| format!("Failed to read daily.json at {}: {}", path.display(), e))?;
+    let mut json: serde_json::Value = serde_json::from_str(&raw)
+        .map_err(|e| format!("daily.json parse error: {}", e))?;
+
+    let actions = json
+        .get_mut("action_items")
+        .and_then(|v| v.as_array_mut())
+        .ok_or_else(|| "daily.json has no action_items array".to_string())?;
+
+    let target = actions.iter_mut().find(|item| {
+        if let Some(fp) = fingerprint.as_deref() {
+            if let Some(item_fp) = item.get("fingerprint").and_then(|v| v.as_str()) {
+                return item_fp == fp;
+            }
+        }
+        item.get("id").and_then(|v| v.as_str()) == Some(id.as_str())
+    });
+
+    let target = target.ok_or_else(|| {
+        format!(
+            "Action item not found (fingerprint={:?}, id={})",
+            fingerprint, id
+        )
+    })?;
+
+    target["done"] = serde_json::Value::Bool(done);
+    target["completed_at"] = if done {
+        let now = chrono::Local::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, false);
+        serde_json::Value::String(now)
+    } else {
+        serde_json::Value::Null
+    };
+
+    let serialized = serde_json::to_string_pretty(&json)
+        .map_err(|e| format!("daily.json serialize error: {}", e))?;
+    let tmp_path = path.with_extension("json.tmp");
+    fs::write(&tmp_path, serialized)
+        .map_err(|e| format!("Failed to write {}: {}", tmp_path.display(), e))?;
+    fs::rename(&tmp_path, &path)
+        .map_err(|e| format!("Failed to swap daily.json: {}", e))?;
     Ok(())
 }
 

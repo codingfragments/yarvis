@@ -314,6 +314,9 @@ export interface ActionItem {
 	url: string | null;
 	deal_tag: string | null;
 	done: boolean;
+	fingerprint: string | null;
+	created_at: string | null;
+	completed_at: string | null;
 }
 
 export interface Fun {
