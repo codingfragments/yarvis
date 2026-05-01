@@ -100,9 +100,48 @@
 		if (c.status === 'fulfilled') config = c.value;
 	}
 
+	// Items the user just ticked done — kept visible for the configured
+	// grace period so a mistaken click can be undone before the row
+	// disappears. Setting the grace to 0 disables the buffer.
+	const pendingHide = new Set<string>();
+	const hideTimers = new Map<string, ReturnType<typeof setTimeout>>();
+	let pendingHideVersion = $state(0);
+
+	function actionKey(a: ActionItemData): string {
+		return a.fingerprint ?? a.id;
+	}
+
+	function onActionToggled(action: ActionItemData, done: boolean) {
+		const key = actionKey(action);
+		const existing = hideTimers.get(key);
+		if (existing !== undefined) {
+			clearTimeout(existing);
+			hideTimers.delete(key);
+		}
+		const graceMs = settings.current.action_done_grace_seconds * 1000;
+		if (done && graceMs > 0) {
+			pendingHide.add(key);
+			pendingHideVersion++;
+			hideTimers.set(
+				key,
+				setTimeout(() => {
+					pendingHide.delete(key);
+					hideTimers.delete(key);
+					pendingHideVersion++;
+				}, graceMs)
+			);
+		} else {
+			pendingHide.delete(key);
+			pendingHideVersion++;
+		}
+	}
+
 	const topActions = $derived.by((): ActionItemData[] => {
 		if (!briefing) return [];
-		return [...briefing.action_items]
+		// eslint-disable-next-line @typescript-eslint/no-unused-expressions
+		pendingHideVersion;
+		return briefing.action_items
+			.filter((a) => !a.done || pendingHide.has(actionKey(a)))
 			.sort((a, c) => priorityRank(a.priority) - priorityRank(c.priority))
 			.slice(0, 3);
 	});
@@ -231,8 +270,8 @@
 						<a href="/dashboard" class="text-xs text-primary hover:underline ml-auto">all →</a>
 					</div>
 					<ul class="flex flex-col gap-1.5">
-						{#each topActions as a}
-							<ActionItem compact action={a} deal={dealById(a.deal_tag)} />
+						{#each topActions as a (a.fingerprint ?? a.id)}
+							<ActionItem compact action={a} deal={dealById(a.deal_tag)} onToggle={onActionToggled} />
 						{/each}
 					</ul>
 				</section>

@@ -41,3 +41,12 @@ export async function answerQuestion(
 ): Promise<void> {
 	return invoke<void>('answer_question', { dailyDir, title, answer });
 }
+
+export async function setActionDone(
+	dailyDir: string,
+	fingerprint: string | null,
+	id: string,
+	done: boolean
+): Promise<void> {
+	return invoke<void>('set_action_done', { dailyDir, fingerprint, id, done });
+}

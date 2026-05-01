@@ -13,6 +13,7 @@ export interface Settings {
 	daily_src_dir: string;
 	auto_refresh_enabled: boolean;
 	auto_refresh_interval_minutes: number;
+	action_done_grace_seconds: number;
 }
 
 export interface DateEntry {
@@ -314,6 +315,9 @@ export interface ActionItem {
 	url: string | null;
 	deal_tag: string | null;
 	done: boolean;
+	fingerprint: string | null;
+	created_at: string | null;
+	completed_at: string | null;
 }
 
 export interface Fun {

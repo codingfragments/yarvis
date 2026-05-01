@@ -22,6 +22,7 @@ pub fn run() {
             commands::dashboard::daily_status,
             commands::dashboard::read_questions,
             commands::dashboard::answer_question,
+            commands::dashboard::set_action_done,
             commands::learning::scan_learning_courses,
             commands::learning::get_learning_course,
             commands::learning::get_learning_progress,

@@ -2,6 +2,7 @@
 	import { getSettingsStore } from '$lib/stores/settings.svelte';
 	import SettingsSection from './SettingsSection.svelte';
 	import SettingsTextField from './SettingsTextField.svelte';
+	import SettingsRangeField from './SettingsRangeField.svelte';
 
 	const settings = getSettingsStore();
 </script>
@@ -26,4 +27,15 @@
 			Folder containing <code>briefing_config.yaml</code> (intelligence categories, deal colours)
 		{/snippet}
 	</SettingsTextField>
+
+	<SettingsRangeField
+		label="Action done grace period"
+		display={settings.current.action_done_grace_seconds === 0
+			? 'Off'
+			: `${settings.current.action_done_grace_seconds}s`}
+		value={settings.current.action_done_grace_seconds}
+		min={0}
+		max={15}
+		onChange={(v) => settings.update({ action_done_grace_seconds: v })}
+	/>
 </SettingsSection>

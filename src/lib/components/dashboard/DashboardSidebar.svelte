@@ -21,6 +21,16 @@
 	let actionsOpen = $state(true);
 	let prepsOpen = $state(false);
 	let funShowJoke = $state(false);
+	let openOnly = $state(false);
+
+	const visibleActions = $derived.by(() => {
+		const filtered = openOnly ? actions.filter((a) => !a.done) : actions;
+		return [...filtered].sort((a, c) => priorityRank(a.priority) - priorityRank(c.priority));
+	});
+
+	const emptyFallback = $derived(
+		openOnly && actions.some((a) => a.done) ? 'All actions done — nice.' : 'Nothing queued.'
+	);
 </script>
 
 <aside
@@ -34,13 +44,20 @@
 			onToggle={(o) => (actionsOpen = o)}
 			icon="⚡"
 			title="Action items"
-			count={actions.length}
+			count={visibleActions.length}
 		>
-			{#if actions.length === 0}
-				<EmptyState items="actions" {lensActive} {lensName} fallback="Nothing queued." />
+			{#snippet actions()}
+				<label class="flex items-center gap-1.5 text-xs text-base-content/60 cursor-pointer select-none" title="Hide completed actions">
+					<input type="checkbox" class="toggle toggle-xs" bind:checked={openOnly} />
+					<span>Open only</span>
+				</label>
+			{/snippet}
+
+			{#if visibleActions.length === 0}
+				<EmptyState items="actions" {lensActive} {lensName} fallback={emptyFallback} />
 			{:else}
 				<ul class="flex flex-col gap-2">
-					{#each [...actions].sort((a, c) => priorityRank(a.priority) - priorityRank(c.priority)) as a}
+					{#each visibleActions as a (a.fingerprint ?? a.id)}
 						<ActionItem action={a} deal={dealById(a.deal_tag)} />
 					{/each}
 				</ul>

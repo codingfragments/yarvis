@@ -16,7 +16,8 @@ const DEFAULT_SETTINGS: Settings = {
 	daily_dir: '~/claude-chats/briefings/daily',
 	daily_src_dir: '~/claude-chats/src/daily',
 	auto_refresh_enabled: true,
-	auto_refresh_interval_minutes: 5
+	auto_refresh_interval_minutes: 5,
+	action_done_grace_seconds: 3
 };
 
 let settings = $state<Settings>({ ...DEFAULT_SETTINGS });
