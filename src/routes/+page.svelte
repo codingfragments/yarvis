@@ -14,6 +14,7 @@
 		staleness
 	} from '$lib/dashboard/format';
 	import { onMount } from 'svelte';
+	import { SvelteSet } from 'svelte/reactivity';
 	import type {
 		ActionItem as ActionItemData,
 		ActiveDealDef,
@@ -100,10 +101,41 @@
 		if (c.status === 'fulfilled') config = c.value;
 	}
 
+	// Items the user just ticked done — kept visible for HIDE_DELAY_MS so a
+	// mistaken click can be undone before the row disappears.
+	const HIDE_DELAY_MS = 5000;
+	const pendingHide = new SvelteSet<string>();
+	const hideTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+	function actionKey(a: ActionItemData): string {
+		return a.fingerprint ?? a.id;
+	}
+
+	function onActionToggled(action: ActionItemData, done: boolean) {
+		const key = actionKey(action);
+		const existing = hideTimers.get(key);
+		if (existing !== undefined) {
+			clearTimeout(existing);
+			hideTimers.delete(key);
+		}
+		if (done) {
+			pendingHide.add(key);
+			hideTimers.set(
+				key,
+				setTimeout(() => {
+					pendingHide.delete(key);
+					hideTimers.delete(key);
+				}, HIDE_DELAY_MS)
+			);
+		} else {
+			pendingHide.delete(key);
+		}
+	}
+
 	const topActions = $derived.by((): ActionItemData[] => {
 		if (!briefing) return [];
 		return briefing.action_items
-			.filter((a) => !a.done)
+			.filter((a) => !a.done || pendingHide.has(actionKey(a)))
 			.sort((a, c) => priorityRank(a.priority) - priorityRank(c.priority))
 			.slice(0, 3);
 	});
@@ -233,7 +265,7 @@
 					</div>
 					<ul class="flex flex-col gap-1.5">
 						{#each topActions as a}
-							<ActionItem compact action={a} deal={dealById(a.deal_tag)} />
+							<ActionItem compact action={a} deal={dealById(a.deal_tag)} onToggle={onActionToggled} />
 						{/each}
 					</ul>
 				</section>

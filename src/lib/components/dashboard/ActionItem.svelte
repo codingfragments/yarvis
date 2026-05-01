@@ -11,9 +11,10 @@
 		action: ActionItem;
 		deal: ActiveDealDef | null;
 		compact?: boolean;
+		onToggle?: (action: ActionItem, done: boolean) => void;
 	}
 
-	let { action: a, deal, compact = false }: Props = $props();
+	let { action: a, deal, compact = false, onToggle }: Props = $props();
 
 	const dashboard = getDashboardStore();
 	const settings = getSettingsStore();
@@ -21,11 +22,13 @@
 
 	let toggling = $state(false);
 
-	async function onToggle() {
+	async function toggleDone() {
 		if (toggling) return;
+		const next = !a.done;
 		toggling = true;
 		try {
-			await dashboard.setActionDone(settings.current.daily_dir, a, !a.done);
+			await dashboard.setActionDone(settings.current.daily_dir, a, next);
+			onToggle?.(a, next);
 		} catch (err) {
 			console.error('Failed to toggle action done:', err);
 		} finally {
@@ -41,7 +44,7 @@
 			class="checkbox checkbox-xs mt-0.5 shrink-0"
 			checked={a.done}
 			disabled={toggling}
-			onchange={onToggle}
+			onchange={toggleDone}
 			aria-label={a.done ? 'Mark as not done' : 'Mark as done'}
 		/>
 	{/snippet}
