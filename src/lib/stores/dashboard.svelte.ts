@@ -107,20 +107,41 @@ export function getDashboardStore() {
 		},
 
 		async setActionDone(dailyDir: string, action: ActionItem, done: boolean) {
-			if (!isTauri() || !briefing) return;
+			if (!isTauri()) return;
+			// Mutate the passed-in proxy directly. The action may belong to the
+			// caller's local $state (e.g. the home page's own briefing) rather
+			// than the store's briefing — finding it inside `briefing` would
+			// mutate the wrong proxy and the caller's view wouldn't react.
 			const previousDone = action.done;
 			const previousCompletedAt = action.completed_at;
-			const target = briefing.action_items.find(
-				(x) => (action.fingerprint && x.fingerprint === action.fingerprint) || x.id === action.id
-			);
-			if (!target) return;
-			target.done = done;
-			target.completed_at = done ? new Date().toISOString() : null;
+			const completedAt = done ? new Date().toISOString() : null;
+			action.done = done;
+			action.completed_at = completedAt;
+			// Mirror to the store's own briefing if loaded so the dashboard view
+			// stays in sync without waiting for the next softRefresh.
+			if (briefing) {
+				const mirror = briefing.action_items.find(
+					(x) => (action.fingerprint && x.fingerprint === action.fingerprint) || x.id === action.id
+				);
+				if (mirror && mirror !== action) {
+					mirror.done = done;
+					mirror.completed_at = completedAt;
+				}
+			}
 			try {
 				await dashboardService.setActionDone(dailyDir, action.fingerprint, action.id, done);
 			} catch (e) {
-				target.done = previousDone;
-				target.completed_at = previousCompletedAt;
+				action.done = previousDone;
+				action.completed_at = previousCompletedAt;
+				if (briefing) {
+					const mirror = briefing.action_items.find(
+						(x) => (action.fingerprint && x.fingerprint === action.fingerprint) || x.id === action.id
+					);
+					if (mirror && mirror !== action) {
+						mirror.done = previousDone;
+						mirror.completed_at = previousCompletedAt;
+					}
+				}
 				error = String(e);
 				throw e;
 			}

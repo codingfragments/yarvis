@@ -103,8 +103,9 @@
 	// Items the user just ticked done — kept visible for HIDE_DELAY_MS so a
 	// mistaken click can be undone before the row disappears.
 	const HIDE_DELAY_MS = 5000;
-	let pendingHide = $state<Record<string, true>>({});
+	const pendingHide = new Set<string>();
 	const hideTimers = new Map<string, ReturnType<typeof setTimeout>>();
+	let pendingHideVersion = $state(0);
 
 	function actionKey(a: ActionItemData): string {
 		return a.fingerprint ?? a.id;
@@ -118,23 +119,31 @@
 			hideTimers.delete(key);
 		}
 		if (done) {
-			pendingHide[key] = true;
+			pendingHide.add(key);
+			pendingHideVersion++;
+			console.log('[home] grace start', key, 'until', new Date(Date.now() + HIDE_DELAY_MS).toLocaleTimeString());
 			hideTimers.set(
 				key,
 				setTimeout(() => {
-					delete pendingHide[key];
+					pendingHide.delete(key);
 					hideTimers.delete(key);
+					pendingHideVersion++;
+					console.log('[home] grace end', key);
 				}, HIDE_DELAY_MS)
 			);
 		} else {
-			delete pendingHide[key];
+			pendingHide.delete(key);
+			pendingHideVersion++;
+			console.log('[home] grace cancelled (untoggled)', key);
 		}
 	}
 
 	const topActions = $derived.by((): ActionItemData[] => {
 		if (!briefing) return [];
+		// eslint-disable-next-line @typescript-eslint/no-unused-expressions
+		pendingHideVersion;
 		return briefing.action_items
-			.filter((a) => !a.done || pendingHide[actionKey(a)] === true)
+			.filter((a) => !a.done || pendingHide.has(actionKey(a)))
 			.sort((a, c) => priorityRank(a.priority) - priorityRank(c.priority))
 			.slice(0, 3);
 	});
