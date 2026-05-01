@@ -102,7 +102,8 @@
 
 	const topActions = $derived.by((): ActionItemData[] => {
 		if (!briefing) return [];
-		return [...briefing.action_items]
+		return briefing.action_items
+			.filter((a) => !a.done)
 			.sort((a, c) => priorityRank(a.priority) - priorityRank(c.priority))
 			.slice(0, 3);
 	});
