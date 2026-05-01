@@ -10,13 +10,16 @@ interface ThingsAddParams {
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
+function param(key: string, value: string): string {
+	return `${key}=${encodeURIComponent(value)}`;
+}
+
 export function buildThingsAddUrl(params: ThingsAddParams): string {
-	const q = new URLSearchParams();
-	q.set('title', params.title);
-	if (params.notes) q.set('notes', params.notes);
-	if (params.deadline) q.set('deadline', params.deadline);
-	if (params.tags?.length) q.set('tags', params.tags.join(','));
-	return `things:///add?${q.toString()}`;
+	const parts: string[] = [param('title', params.title)];
+	if (params.notes) parts.push(param('notes', params.notes));
+	if (params.deadline) parts.push(param('deadline', params.deadline));
+	if (params.tags?.length) parts.push(param('tags', params.tags.join(',')));
+	return `things:///add?${parts.join('&')}`;
 }
 
 export function sendActionToThings(action: ActionItem): Promise<void> {
