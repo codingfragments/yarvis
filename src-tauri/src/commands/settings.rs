@@ -39,6 +39,8 @@ pub struct Settings {
     pub auto_refresh_enabled: bool,
     #[serde(default = "default_auto_refresh_interval_minutes")]
     pub auto_refresh_interval_minutes: u32,
+    #[serde(default = "default_action_done_grace_seconds")]
+    pub action_done_grace_seconds: u32,
 }
 
 fn default_daily_dir() -> String {
@@ -59,6 +61,10 @@ fn default_auto_refresh_enabled() -> bool {
 
 fn default_auto_refresh_interval_minutes() -> u32 {
     5
+}
+
+fn default_action_done_grace_seconds() -> u32 {
+    3
 }
 
 impl Default for Settings {
@@ -83,6 +89,7 @@ impl Default for Settings {
             daily_src_dir: default_daily_src_dir(),
             auto_refresh_enabled: default_auto_refresh_enabled(),
             auto_refresh_interval_minutes: default_auto_refresh_interval_minutes(),
+            action_done_grace_seconds: default_action_done_grace_seconds(),
         }
     }
 }

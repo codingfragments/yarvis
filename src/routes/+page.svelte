@@ -100,9 +100,9 @@
 		if (c.status === 'fulfilled') config = c.value;
 	}
 
-	// Items the user just ticked done — kept visible for HIDE_DELAY_MS so a
-	// mistaken click can be undone before the row disappears.
-	const HIDE_DELAY_MS = 5000;
+	// Items the user just ticked done — kept visible for the configured
+	// grace period so a mistaken click can be undone before the row
+	// disappears. Setting the grace to 0 disables the buffer.
 	const pendingHide = new Set<string>();
 	const hideTimers = new Map<string, ReturnType<typeof setTimeout>>();
 	let pendingHideVersion = $state(0);
@@ -118,23 +118,21 @@
 			clearTimeout(existing);
 			hideTimers.delete(key);
 		}
-		if (done) {
+		const graceMs = settings.current.action_done_grace_seconds * 1000;
+		if (done && graceMs > 0) {
 			pendingHide.add(key);
 			pendingHideVersion++;
-			console.log('[home] grace start', key, 'until', new Date(Date.now() + HIDE_DELAY_MS).toLocaleTimeString());
 			hideTimers.set(
 				key,
 				setTimeout(() => {
 					pendingHide.delete(key);
 					hideTimers.delete(key);
 					pendingHideVersion++;
-					console.log('[home] grace end', key);
-				}, HIDE_DELAY_MS)
+				}, graceMs)
 			);
 		} else {
 			pendingHide.delete(key);
 			pendingHideVersion++;
-			console.log('[home] grace cancelled (untoggled)', key);
 		}
 	}
 
