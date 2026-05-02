@@ -23,8 +23,8 @@
 
 	let toggling = $state(false);
 	let sending = $state(false);
-	let justSent = $state(false);
-	let sentTimer: ReturnType<typeof setTimeout> | null = null;
+	let lastResult = $state<'created' | 'exists' | null>(null);
+	let resultTimer: ReturnType<typeof setTimeout> | null = null;
 
 	async function toggleDone() {
 		if (toggling) return;
@@ -48,12 +48,12 @@
 		if (sending) return;
 		sending = true;
 		try {
-			await sendActionToThings(a);
-			justSent = true;
-			if (sentTimer) clearTimeout(sentTimer);
-			sentTimer = setTimeout(() => {
-				justSent = false;
-				sentTimer = null;
+			const res = await sendActionToThings(a);
+			lastResult = res.status;
+			if (resultTimer) clearTimeout(resultTimer);
+			resultTimer = setTimeout(() => {
+				lastResult = null;
+				resultTimer = null;
 			}, 2000);
 		} catch (err) {
 			console.error('Failed to send to Things:', err);
@@ -88,15 +88,30 @@
 		<div class="flex flex-col items-end gap-1">
 			<button
 				type="button"
-				class="inline-flex items-center gap-1 rounded-full transition-colors px-2 py-0.5 text-xs disabled:opacity-50 {justSent
+				class="inline-flex items-center gap-1 rounded-full transition-colors px-2 py-0.5 text-xs disabled:opacity-50 {lastResult ===
+				'created'
 					? 'bg-success/20 text-success'
-					: 'bg-base-300/50 hover:bg-base-300 text-base-content/70 hover:text-base-content'}"
-				title={justSent ? 'Sent to Things' : 'Send to Things'}
+					: lastResult === 'exists'
+						? 'bg-info/20 text-info'
+						: 'bg-base-300/50 hover:bg-base-300 text-base-content/70 hover:text-base-content'}"
+				title={lastResult === 'created'
+					? 'Sent to Things'
+					: lastResult === 'exists'
+						? 'Already in Things'
+						: 'Send to Things'}
 				disabled={sending}
 				onclick={onThings}
 			>
-				<span aria-hidden="true">{justSent ? '✓' : '📋'}</span>
-				<span>{justSent ? 'Sent' : 'Things'}</span>
+				<span aria-hidden="true"
+					>{lastResult === 'created' ? '✓' : lastResult === 'exists' ? '✓' : '📋'}</span
+				>
+				<span
+					>{lastResult === 'created'
+						? 'Sent'
+						: lastResult === 'exists'
+							? 'In Things'
+							: 'Things'}</span
+				>
 			</button>
 			{#if a.url}<ExternalLink href={a.url} label="open" />{/if}
 		</div>
