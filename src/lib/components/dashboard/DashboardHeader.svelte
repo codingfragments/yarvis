@@ -45,6 +45,13 @@
 		{/if}
 
 		<span
+			class="hidden sm:inline text-xs font-mono text-base-content/50"
+			title="Briefing generated at {fmtClock(b.meta.generated_at)} ({b.meta.run_type ?? '?'} run)"
+		>
+			updated {fmtClock(b.meta.generated_at)}
+		</span>
+
+		<span
 			class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium font-mono"
 			class:bg-success={stale.tone === 'fresh'}
 			class:text-success-content={stale.tone === 'fresh'}
