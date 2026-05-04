@@ -28,6 +28,7 @@ pub fn run() {
             commands::learning::get_learning_progress,
             commands::learning::save_learning_progress,
             commands::learning::reset_learning_progress,
+            commands::external::add_to_things,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Yarvis");
