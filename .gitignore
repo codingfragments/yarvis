@@ -35,3 +35,6 @@ specs/plan.md
 
 # Yarvis data (local dev)
 .yarvis-dev/
+
+# Skill: user-specific config containing real deal data, exec emails, channel ids
+ai/briefing_config.yaml

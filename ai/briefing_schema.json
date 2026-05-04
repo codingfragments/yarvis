@@ -1,0 +1,451 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/codingfragments/yarvis/briefing_schema.json",
+  "title": "Daily Briefing",
+  "description": "Strict shape contract for daily.json. Lenient on extra fields (producer can emit richer data without failing) but strict on required fields, types, and enums — that is where typo and drift protection lives.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "meta",
+    "greeting",
+    "meeting_preps",
+    "calendar",
+    "email",
+    "slack",
+    "intelligence",
+    "action_items",
+    "focus_prompt",
+    "fun"
+  ],
+  "properties": {
+    "meta": { "$ref": "#/$defs/meta" },
+    "greeting": { "oneOf": [{ "$ref": "#/$defs/greeting" }, { "type": "null" }] },
+    "meeting_preps": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/meeting_prep" }
+    },
+    "calendar": { "oneOf": [{ "$ref": "#/$defs/calendar" }, { "type": "null" }] },
+    "email": { "oneOf": [{ "$ref": "#/$defs/email_section" }, { "type": "null" }] },
+    "slack": { "oneOf": [{ "$ref": "#/$defs/slack_section" }, { "type": "null" }] },
+    "intelligence": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/intel_category" }
+    },
+    "action_items": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/action_item" }
+    },
+    "focus_prompt": { "type": ["string", "null"] },
+    "fun": { "oneOf": [{ "$ref": "#/$defs/fun" }, { "type": "null" }] }
+  },
+
+  "$defs": {
+    "iso_date": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "iso_datetime": {
+      "type": "string",
+      "description": "ISO 8601 datetime with timezone offset, e.g. 2026-04-27T08:15:00+02:00",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}([.,]\\d+)?(Z|[+-]\\d{2}:\\d{2})$"
+    },
+    "iso_datetime_or_null": {
+      "oneOf": [{ "$ref": "#/$defs/iso_datetime" }, { "type": "null" }]
+    },
+    "time_hhmm": {
+      "type": "string",
+      "pattern": "^\\d{2}:\\d{2}$"
+    },
+
+    "urgency_full": {
+      "type": "string",
+      "enum": ["critical", "high", "medium", "low"]
+    },
+    "urgency_act_today": {
+      "type": "string",
+      "description": "act_today items are at minimum 'medium' (per spec)",
+      "enum": ["critical", "high", "medium"]
+    },
+    "priority": {
+      "type": "string",
+      "enum": ["high", "medium", "low"]
+    },
+    "run_type": {
+      "type": "string",
+      "enum": ["full", "midday", "incremental"]
+    },
+    "event_type": {
+      "type": "string",
+      "enum": ["external", "internal", "personal_block", "personal", "declined"]
+    },
+    "activity_level": {
+      "type": "string",
+      "enum": ["high", "medium", "low", "quiet"]
+    },
+    "action_source_type": {
+      "type": "string",
+      "enum": ["email", "slack", "calendar", "intelligence", "manual"]
+    },
+    "fingerprint": {
+      "type": "string",
+      "description": "Stable cross-run identity. Format depends on source_type but always begins with the source prefix.",
+      "pattern": "^(email|slack|calendar|intel|manual|fallback)-[A-Za-z0-9_.:-]+$"
+    },
+
+    "next_meeting": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["title", "starts_at", "minutes_away"],
+      "properties": {
+        "title": { "type": "string" },
+        "starts_at": { "$ref": "#/$defs/iso_datetime" },
+        "minutes_away": { "type": "integer" }
+      }
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "briefing_date",
+        "generated_at",
+        "timezone",
+        "update_sequence",
+        "last_successful_run",
+        "run_type",
+        "next_meeting"
+      ],
+      "properties": {
+        "briefing_date": { "$ref": "#/$defs/iso_date" },
+        "generated_at": { "$ref": "#/$defs/iso_datetime" },
+        "timezone": { "type": "string" },
+        "update_sequence": { "type": "integer", "minimum": 1 },
+        "last_successful_run": { "$ref": "#/$defs/iso_datetime_or_null" },
+        "run_type": { "$ref": "#/$defs/run_type" },
+        "next_meeting": {
+          "oneOf": [{ "$ref": "#/$defs/next_meeting" }, { "type": "null" }]
+        }
+      }
+    },
+
+    "greeting": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["text", "context_note"],
+      "properties": {
+        "text": { "type": "string" },
+        "context_note": { "type": ["string", "null"] }
+      }
+    },
+
+    "meeting_prep": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["time", "title", "file", "deal_tag"],
+      "properties": {
+        "time": { "$ref": "#/$defs/time_hhmm" },
+        "title": { "type": "string" },
+        "file": { "type": ["string", "null"] },
+        "deal_tag": { "type": ["string", "null"] },
+        "meeting_id": { "type": ["string", "null"] },
+        "time_iso": { "$ref": "#/$defs/iso_datetime_or_null" },
+        "type": { "$ref": "#/$defs/event_type" }
+      }
+    },
+
+    "calendar": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["summary", "events", "conflicts"],
+      "properties": {
+        "summary": { "type": ["string", "null"] },
+        "events": { "type": "array", "items": { "$ref": "#/$defs/calendar_event" } },
+        "conflicts": { "type": "array", "items": { "$ref": "#/$defs/conflict" } }
+      }
+    },
+    "calendar_event": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "start",
+        "end",
+        "title",
+        "participants",
+        "type",
+        "is_external",
+        "urgency",
+        "deal_tag",
+        "initiative",
+        "links",
+        "notes"
+      ],
+      "properties": {
+        "start": { "$ref": "#/$defs/time_hhmm" },
+        "end": { "$ref": "#/$defs/time_hhmm" },
+        "title": { "type": "string" },
+        "participants": { "type": "array", "items": { "type": "string" } },
+        "type": { "$ref": "#/$defs/event_type" },
+        "is_external": { "type": "boolean" },
+        "urgency": { "$ref": "#/$defs/urgency_full" },
+        "deal_tag": { "type": ["string", "null"] },
+        "initiative": { "type": ["string", "null"] },
+        "links": { "$ref": "#/$defs/event_links" },
+        "notes": { "type": ["string", "null"] },
+        "id": { "type": ["string", "null"] },
+        "start_iso": { "$ref": "#/$defs/iso_datetime_or_null" },
+        "end_iso": { "$ref": "#/$defs/iso_datetime_or_null" },
+        "category": { "$ref": "#/$defs/event_type" },
+        "rsvp_status": { "type": ["string", "null"] },
+        "location": { "type": ["string", "null"] },
+        "action": { "type": ["string", "null"] }
+      }
+    },
+    "event_links": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["doc", "zoom", "other"],
+      "properties": {
+        "doc": { "type": ["string", "null"] },
+        "zoom": { "type": ["string", "null"] },
+        "other": { "type": ["string", "null"] }
+      }
+    },
+    "conflict": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["time", "event_titles", "description", "action_needed"],
+      "properties": {
+        "time": { "$ref": "#/$defs/time_hhmm" },
+        "event_titles": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "type": "string" }
+        },
+        "description": { "type": "string" },
+        "action_needed": { "type": ["string", "null"] }
+      }
+    },
+
+    "email_section": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["act_today", "fyi", "no_action_summary"],
+      "properties": {
+        "act_today": { "type": "array", "items": { "$ref": "#/$defs/email_act_item" } },
+        "fyi": { "type": "array", "items": { "$ref": "#/$defs/email_fyi_item" } },
+        "no_action_summary": { "type": ["string", "null"] }
+      }
+    },
+    "email_act_item": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "id",
+        "from",
+        "subject",
+        "received",
+        "url",
+        "summary",
+        "action",
+        "urgency",
+        "deal_tag",
+        "initiative",
+        "tags"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^email_act_\\d+$" },
+        "from": { "type": "string" },
+        "subject": { "type": "string" },
+        "received": { "$ref": "#/$defs/iso_datetime" },
+        "url": { "type": ["string", "null"] },
+        "url_note": { "type": "string" },
+        "summary": { "type": "string" },
+        "action": { "type": "string" },
+        "urgency": { "$ref": "#/$defs/urgency_act_today" },
+        "deal_tag": { "type": ["string", "null"] },
+        "initiative": { "type": ["string", "null"] },
+        "tags": { "type": "array", "items": { "type": "string" } }
+      },
+      "if": { "properties": { "url": { "type": "null" } }, "required": ["url"] },
+      "then": { "required": ["url_note"] }
+    },
+    "email_fyi_item": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "id",
+        "from",
+        "subject",
+        "received",
+        "url",
+        "summary",
+        "context",
+        "urgency",
+        "deal_tag",
+        "initiative",
+        "tags"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^email_fyi_\\d+$" },
+        "from": { "type": "string" },
+        "subject": { "type": "string" },
+        "received": { "$ref": "#/$defs/iso_datetime" },
+        "url": { "type": ["string", "null"] },
+        "url_note": { "type": "string" },
+        "summary": { "type": "string" },
+        "context": { "type": ["string", "null"] },
+        "urgency": { "$ref": "#/$defs/urgency_full" },
+        "deal_tag": { "type": ["string", "null"] },
+        "initiative": { "type": ["string", "null"] },
+        "tags": { "type": "array", "items": { "type": "string" } }
+      },
+      "if": { "properties": { "url": { "type": "null" } }, "required": ["url"] },
+      "then": { "required": ["url_note"] }
+    },
+
+    "slack_section": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["since", "channels", "dms"],
+      "properties": {
+        "since": { "type": ["string", "null"] },
+        "channels": { "type": "array", "items": { "$ref": "#/$defs/slack_channel" } },
+        "dms": { "type": "array", "items": { "$ref": "#/$defs/slack_dm" } }
+      }
+    },
+    "slack_channel": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "channel_id",
+        "channel_name",
+        "url",
+        "deal_tag",
+        "activity_level",
+        "messages"
+      ],
+      "properties": {
+        "channel_id": { "type": "string", "pattern": "^[CDG][A-Z0-9]+$" },
+        "channel_name": { "type": "string" },
+        "url": { "type": "string" },
+        "deal_tag": { "type": ["string", "null"] },
+        "activity_level": { "$ref": "#/$defs/activity_level" },
+        "messages": { "type": "array", "items": { "$ref": "#/$defs/slack_message" } }
+      }
+    },
+    "slack_message": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["author", "timestamp", "summary", "links", "action"],
+      "properties": {
+        "author": { "type": ["string", "null"] },
+        "timestamp": { "$ref": "#/$defs/iso_datetime_or_null" },
+        "summary": { "type": "string" },
+        "links": { "type": "array", "items": { "$ref": "#/$defs/named_link" } },
+        "action": { "type": ["string", "null"] },
+        "url": { "type": ["string", "null"] }
+      }
+    },
+    "named_link": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["label", "url"],
+      "properties": {
+        "label": { "type": "string" },
+        "url": { "type": "string" }
+      }
+    },
+    "slack_dm": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["with", "url", "summary", "action"],
+      "properties": {
+        "with": { "type": "string" },
+        "url": { "type": ["string", "null"] },
+        "url_note": { "type": "string" },
+        "summary": { "type": "string" },
+        "action": { "type": ["string", "null"] }
+      },
+      "if": { "properties": { "url": { "type": "null" } }, "required": ["url"] },
+      "then": { "required": ["url_note"] }
+    },
+
+    "intel_category": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["category_id", "items"],
+      "properties": {
+        "category_id": { "type": "string" },
+        "items": { "type": "array", "items": { "$ref": "#/$defs/intel_item" } }
+      }
+    },
+    "intel_item": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["headline", "detail", "date", "source", "url", "tags", "relevance"],
+      "properties": {
+        "headline": { "type": "string" },
+        "detail": { "type": "string" },
+        "date": {
+          "oneOf": [{ "$ref": "#/$defs/iso_date" }, { "type": "null" }]
+        },
+        "source": { "type": "string" },
+        "url": { "type": ["string", "null"] },
+        "url_note": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "relevance": { "type": ["string", "null"] }
+      },
+      "if": { "properties": { "url": { "type": "null" } }, "required": ["url"] },
+      "then": { "required": ["url_note"] }
+    },
+
+    "action_item": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "id",
+        "fingerprint",
+        "text",
+        "priority",
+        "deadline",
+        "source_type",
+        "source_ref",
+        "url",
+        "deal_tag",
+        "done",
+        "created_at",
+        "completed_at",
+        "initiative"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "action_N for newly derived items; action_done_N for items preserved from base via fingerprint match",
+          "pattern": "^action(_done)?_\\d+$"
+        },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "text": { "type": "string" },
+        "priority": { "$ref": "#/$defs/priority" },
+        "deadline": { "type": ["string", "null"] },
+        "source_type": { "$ref": "#/$defs/action_source_type" },
+        "source_ref": { "type": ["string", "null"] },
+        "url": { "type": ["string", "null"] },
+        "url_note": { "type": "string" },
+        "deal_tag": { "type": ["string", "null"] },
+        "initiative": { "type": ["string", "null"] },
+        "done": { "type": "boolean" },
+        "created_at": { "$ref": "#/$defs/iso_datetime" },
+        "completed_at": { "$ref": "#/$defs/iso_datetime_or_null" }
+      }
+    },
+
+    "fun": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["fact", "joke"],
+      "properties": {
+        "fact": { "type": ["string", "null"] },
+        "joke": { "type": ["string", "null"] }
+      }
+    }
+  }
+}
