@@ -4,6 +4,7 @@
 	import Chip from './Chip.svelte';
 	import ExternalLink from './ExternalLink.svelte';
 	import { rowAccent } from '$lib/dashboard/format';
+	import { openUrl } from '$lib/services/tauri';
 
 	interface Props {
 		event: CalendarEvent;
@@ -17,14 +18,35 @@
 	const accent = $derived(rowAccent({ urgency: e.urgency, eventType: e.type }));
 	const declined = $derived(e.type === 'declined');
 	const muted = $derived(e.type === 'personal_block' || e.type === 'personal');
+	// Per schema, links.other holds the Google Calendar event htmlLink.
+	const calendarUrl = $derived(e.links?.other ?? null);
+
+	function navigateToEvent() {
+		if (calendarUrl) void openUrl(calendarUrl);
+	}
 </script>
 
 <AccentRow {accent} dim={declined || muted} strike={declined}>
 	{#snippet leading()}
-		<div class="font-mono text-base-content/60 w-24 shrink-0 pt-0.5">{e.start}–{e.end}</div>
+		<!-- Double-click navigates to the calendar event; keyboard users get the
+		     trailing 🔗 ExternalLink. Intentionally not aria-button: there is no
+		     keyboard equivalent of a double-click. -->
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div
+			class="font-mono text-base-content/60 w-24 shrink-0 pt-0.5 {calendarUrl
+				? 'cursor-pointer'
+				: ''}"
+			ondblclick={navigateToEvent}
+			title={calendarUrl ? 'Double-click to open in calendar' : undefined}
+		>{e.start}–{e.end}</div>
 	{/snippet}
 
-	<div class="flex flex-col gap-0.5">
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div
+		class="flex flex-col gap-0.5 {calendarUrl ? 'cursor-pointer' : ''}"
+		ondblclick={navigateToEvent}
+		title={calendarUrl ? 'Double-click to open in calendar' : undefined}
+	>
 		<div class="flex items-center gap-1.5 flex-wrap">
 			<span class="font-medium text-base-content/90 truncate">{e.title}</span>
 			<Chip {deal} fallbackId={e.deal_tag} />
