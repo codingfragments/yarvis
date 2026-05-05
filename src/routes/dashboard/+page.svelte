@@ -246,7 +246,6 @@
 	title={prep.title}
 	subtitle={prep.subtitle}
 	content={prep.content}
-	loading={prep.loading}
 	error={prep.error}
 	onClose={() => prep.close()}
 />

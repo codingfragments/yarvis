@@ -3,7 +3,6 @@ import type { MeetingPrep } from '$lib/types';
 
 class PrepDrawer {
 	open = $state(false);
-	loading = $state(false);
 	content = $state<string | null>(null);
 	error = $state<string | null>(null);
 	meta = $state<{ title: string; time: string; filename: string } | null>(null);
@@ -18,17 +17,19 @@ class PrepDrawer {
 
 	async openPrep(p: MeetingPrep, briefingsDir: string, briefingDate: string) {
 		if (!p.file) return;
+		// Load content BEFORE opening the popup so the viewer mounts with the
+		// markdown already in place. Mirrors the memory-viewer flow and avoids
+		// a Svelte 5 prod-mode race where the post-mount reactive update for
+		// the conditional sometimes fails to render the markdown body.
 		this.meta = { title: p.title, time: p.time, filename: p.file };
 		this.content = null;
 		this.error = null;
-		this.loading = true;
-		this.open = true;
 		try {
 			this.content = await readPrep(briefingsDir, briefingDate, p.file);
 		} catch (e) {
 			this.error = String(e);
 		} finally {
-			this.loading = false;
+			this.open = true;
 		}
 	}
 
