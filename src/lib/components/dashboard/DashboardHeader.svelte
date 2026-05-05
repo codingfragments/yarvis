@@ -28,6 +28,10 @@
 	{#if briefing}
 		{@const b = briefing}
 		{@const stale = staleness(b.meta.generated_at, now.getTime())}
+		{@const updateAgeMins = b.meta.generated_at
+			? Math.max(0, Math.round((now.getTime() - Date.parse(b.meta.generated_at)) / 60000))
+			: null}
+		{@const updateStale = updateAgeMins !== null && updateAgeMins >= 120}
 		{@const nextMins = liveMinutesAway(b.meta.next_meeting?.starts_at, now.getTime())}
 
 		{#if b.meta.next_meeting && nextMins !== null}
@@ -45,7 +49,9 @@
 		{/if}
 
 		<span
-			class="hidden sm:inline text-xs font-mono text-base-content/50"
+			class="hidden sm:inline text-xs font-mono {updateStale
+				? 'text-warning font-semibold'
+				: 'text-base-content/50'}"
 			title="Briefing generated at {fmtClock(b.meta.generated_at)} ({b.meta.run_type ?? '?'} run)"
 		>
 			updated {fmtClock(b.meta.generated_at)}
