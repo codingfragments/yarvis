@@ -1,39 +1,44 @@
 import { readPrep } from '$lib/services/dashboard';
 import type { MeetingPrep } from '$lib/types';
 
-let open = $state(false);
-let loading = $state(false);
-let content = $state<string | null>(null);
-let error = $state<string | null>(null);
-let meta = $state<{ title: string; time: string; filename: string } | null>(null);
+class PrepDrawer {
+	open = $state(false);
+	loading = $state(false);
+	content = $state<string | null>(null);
+	error = $state<string | null>(null);
+	meta = $state<{ title: string; time: string; filename: string } | null>(null);
+
+	get title() {
+		return this.meta?.title ?? 'Meeting prep';
+	}
+
+	get subtitle() {
+		return this.meta ? `${this.meta.time} · ${this.meta.filename}` : null;
+	}
+
+	async openPrep(p: MeetingPrep, briefingsDir: string, briefingDate: string) {
+		if (!p.file) return;
+		this.meta = { title: p.title, time: p.time, filename: p.file };
+		this.content = null;
+		this.error = null;
+		this.loading = true;
+		this.open = true;
+		try {
+			this.content = await readPrep(briefingsDir, briefingDate, p.file);
+		} catch (e) {
+			this.error = String(e);
+		} finally {
+			this.loading = false;
+		}
+	}
+
+	close() {
+		this.open = false;
+	}
+}
+
+const instance = new PrepDrawer();
 
 export function getPrepDrawerStore() {
-	return {
-		get open() { return open; },
-		get loading() { return loading; },
-		get content() { return content; },
-		get error() { return error; },
-		get title() { return meta?.title ?? 'Meeting prep'; },
-		get subtitle() { return meta ? `${meta.time} · ${meta.filename}` : null; },
-
-		async openPrep(p: MeetingPrep, briefingsDir: string, briefingDate: string) {
-			if (!p.file) return;
-			meta = { title: p.title, time: p.time, filename: p.file };
-			content = null;
-			error = null;
-			loading = true;
-			open = true;
-			try {
-				content = await readPrep(briefingsDir, briefingDate, p.file);
-			} catch (e) {
-				error = String(e);
-			} finally {
-				loading = false;
-			}
-		},
-
-		close() {
-			open = false;
-		}
-	};
+	return instance;
 }
