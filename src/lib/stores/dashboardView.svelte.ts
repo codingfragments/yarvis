@@ -26,8 +26,12 @@ const filteredPreps = $derived.by(() => {
 });
 
 const filteredEvents = $derived.by(() => {
-	const all = dashboard.briefing?.calendar?.events ?? [];
-	return lensActive ? all.filter((e) => e.deal_tag === dealLens) : all;
+	const source = dashboard.briefing?.calendar?.events ?? [];
+	const filtered = lensActive ? source.filter((e) => e.deal_tag === dealLens) : source.slice();
+	// `start` is "HH:MM" — lexicographic sort is chronological. Copy first
+	// so we never mutate the briefing payload from a derived.
+	filtered.sort((a, b) => a.start.localeCompare(b.start));
+	return filtered;
 });
 
 const filteredConflicts = $derived.by(() => {
