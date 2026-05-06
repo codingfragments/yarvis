@@ -95,6 +95,7 @@
 		try {
 			await dashboard.answerQuestion(
 				settings.current.daily_dir,
+				editingQuestion.fingerprint,
 				editingQuestion.title,
 				answer
 			);

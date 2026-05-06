@@ -333,6 +333,7 @@ pub struct DashboardQuestion {
     pub asked: Option<String>,
     pub run: Option<String>,
     pub context: Option<String>,
+    pub fingerprint: Option<String>,
     pub body: String,
     pub answer: Option<String>,
 }
@@ -520,19 +521,27 @@ pub fn read_questions(daily_dir: String) -> Result<Vec<DashboardQuestion>, Strin
     Ok(parse_questions(&raw))
 }
 
-/// Replace the answer block of a question (matched by title) and flip its
-/// status header. Empty answers restore the placeholder and flip to PENDING.
+/// Replace the answer block of a question and flip its status header.
+/// Matches by `fingerprint` first (stable cross-run identity from the skill)
+/// and falls back to `title` when no fingerprint is supplied or the entry
+/// has none. Empty answers restore the placeholder and flip to PENDING.
 #[tauri::command]
 pub fn answer_question(
     daily_dir: String,
+    fingerprint: Option<String>,
     title: String,
     answer: String,
 ) -> Result<(), String> {
     let path = resolve_dir(&daily_dir).join("question.md");
     let content = fs::read_to_string(&path)
         .map_err(|e| format!("Failed to read question.md: {}", e))?;
-    let updated = patch_question_answer(&content, &title, &answer)
-        .ok_or_else(|| format!("Question not found or already processed: {}", title))?;
+    let updated = patch_question_answer(&content, fingerprint.as_deref(), &title, &answer)
+        .ok_or_else(|| {
+            format!(
+                "Question not found or already processed (fingerprint={:?}, title={})",
+                fingerprint, title
+            )
+        })?;
     fs::write(&path, updated)
         .map_err(|e| format!("Failed to write question.md: {}", e))?;
     Ok(())
@@ -651,6 +660,7 @@ fn parse_questions(content: &str) -> Vec<DashboardQuestion> {
                     asked: None,
                     run: None,
                     context: None,
+                    fingerprint: None,
                     body: String::new(),
                     answer: None,
                 });
@@ -677,6 +687,13 @@ fn parse_questions(content: &str) -> Vec<DashboardQuestion> {
             }
             if let Some(rest) = trimmed.strip_prefix("**Context:**") {
                 q.context = Some(rest.trim().to_string());
+                continue;
+            }
+            if let Some(rest) = trimmed.strip_prefix("**Fingerprint:**") {
+                let fp = rest.trim().to_string();
+                if !fp.is_empty() {
+                    q.fingerprint = Some(fp);
+                }
                 continue;
             }
             if trimmed.starts_with('>') {
@@ -715,12 +732,24 @@ fn is_placeholder_answer(text: &str) -> bool {
 
 /// Pure helper: given the file content, produce the updated content with the
 /// matching question's answer block replaced and status flipped. Returns
-/// None if no editable question matches the title.
-fn patch_question_answer(content: &str, title: &str, answer: &str) -> Option<String> {
+/// None if no editable question matches.
+///
+/// Match strategy: when `fingerprint` is supplied, first try to find an
+/// editable section whose `**Fingerprint:**` line equals it. Fall back to
+/// title matching for legacy entries (no fingerprint line) and when no
+/// fingerprint is supplied at all.
+fn patch_question_answer(
+    content: &str,
+    fingerprint: Option<&str>,
+    title: &str,
+    answer: &str,
+) -> Option<String> {
     let trailing_newline = content.ends_with('\n');
     let mut lines: Vec<String> = content.lines().map(String::from).collect();
 
-    let header_idx = find_question_header(&lines, title)?;
+    let header_idx = fingerprint
+        .and_then(|fp| find_question_header_by_fingerprint(&lines, fp))
+        .or_else(|| find_question_header(&lines, title))?;
     let (qstart, qend) = find_blockquote_in_section(&lines, header_idx);
 
     let answer_text = answer.trim();
@@ -773,8 +802,9 @@ fn find_question_header(lines: &[String], title: &str) -> Option<usize> {
         let rest = &t[3..]; // after "## "
         if let Some(end) = rest.find(']') {
             let status = &rest[1..end];
-            // Refuse processed entries
-            if status == "PROCESSED" {
+            // Refuse processed entries (status tag may carry a trailing
+            // date, e.g. `PROCESSED 2026-04-28`).
+            if status.starts_with("PROCESSED") {
                 return false;
             }
             let title_part = rest[end + 1..].trim();
@@ -782,6 +812,43 @@ fn find_question_header(lines: &[String], title: &str) -> Option<usize> {
         }
         false
     })
+}
+
+/// Find the section header whose body contains `**Fingerprint:** {fp}`.
+/// Refuses sections whose status starts with `PROCESSED` (status tag may
+/// include a trailing date like `PROCESSED 2026-04-28`).
+fn find_question_header_by_fingerprint(lines: &[String], fp: &str) -> Option<usize> {
+    let needle = fp.trim();
+    if needle.is_empty() {
+        return None;
+    }
+    let mut i = 0;
+    while i < lines.len() {
+        let t = lines[i].trim_start();
+        if t.starts_with("## [") {
+            let rest = &t[3..];
+            if let Some(end) = rest.find(']') {
+                let status = &rest[1..end];
+                let editable = !status.starts_with("PROCESSED");
+                let section_end = find_section_end(lines, i);
+                if editable {
+                    for j in (i + 1)..section_end {
+                        let line = lines[j].trim_start();
+                        if let Some(rest) = line.strip_prefix("**Fingerprint:**") {
+                            if rest.trim() == needle {
+                                return Some(i);
+                            }
+                            break;
+                        }
+                    }
+                }
+                i = section_end;
+                continue;
+            }
+        }
+        i += 1;
+    }
+    None
 }
 
 /// Returns (start, end) of the contiguous blockquote inside the section
@@ -849,9 +916,29 @@ mod tests {
             .to_string()
     }
 
+    fn fingerprinted_sample() -> String {
+        "## [PENDING] First question\n\
+        **Asked:** 2026-04-27\n\
+        **Fingerprint:** q-aaaaaaaaaaaaaaaa\n\
+        **Context:** something\n\
+        \n\
+        > *(type your answer here)*\n\
+        \n\
+        ---\n\
+        \n\
+        ## [PENDING] Second question\n\
+        **Asked:** 2026-04-27\n\
+        **Fingerprint:** q-bbbbbbbbbbbbbbbb\n\
+        \n\
+        > *(type your answer here)*\n\
+        \n\
+        ---\n"
+            .to_string()
+    }
+
     #[test]
     fn answers_pending_question_and_flips_status() {
-        let updated = patch_question_answer(&sample(), "First question", "My answer.").unwrap();
+        let updated = patch_question_answer(&sample(), None, "First question", "My answer.").unwrap();
         assert!(updated.contains("## [ANSWERED] First question"));
         assert!(updated.contains("> My answer."));
         assert!(!updated.contains("First question\n**Asked:** 2026-04-27\n**Context:** something\n\n> *(type your answer here)*"));
@@ -861,26 +948,84 @@ mod tests {
 
     #[test]
     fn empty_answer_restores_placeholder_and_pending() {
-        let answered = patch_question_answer(&sample(), "First question", "Real answer").unwrap();
-        let cleared = patch_question_answer(&answered, "First question", "   ").unwrap();
+        let answered = patch_question_answer(&sample(), None, "First question", "Real answer").unwrap();
+        let cleared = patch_question_answer(&answered, None, "First question", "   ").unwrap();
         assert!(cleared.contains("## [PENDING] First question"));
         assert!(cleared.contains("> *(type your answer here)*"));
     }
 
     #[test]
     fn unknown_title_returns_none() {
-        assert!(patch_question_answer(&sample(), "Not present", "x").is_none());
+        assert!(patch_question_answer(&sample(), None, "Not present", "x").is_none());
     }
 
     #[test]
     fn refuses_processed_questions() {
         let processed = sample().replace("[PENDING] First question", "[PROCESSED] First question");
-        assert!(patch_question_answer(&processed, "First question", "x").is_none());
+        assert!(patch_question_answer(&processed, None, "First question", "x").is_none());
     }
 
     #[test]
     fn multiline_answer_prefixes_each_line() {
-        let updated = patch_question_answer(&sample(), "First question", "line one\nline two").unwrap();
+        let updated = patch_question_answer(&sample(), None, "First question", "line one\nline two").unwrap();
         assert!(updated.contains("> line one\n> line two"));
+    }
+
+    #[test]
+    fn parses_fingerprint_when_present() {
+        let parsed = parse_questions(&fingerprinted_sample());
+        assert_eq!(parsed.len(), 2);
+        assert_eq!(parsed[0].fingerprint.as_deref(), Some("q-aaaaaaaaaaaaaaaa"));
+        assert_eq!(parsed[1].fingerprint.as_deref(), Some("q-bbbbbbbbbbbbbbbb"));
+    }
+
+    #[test]
+    fn fingerprint_is_none_when_legacy_entry() {
+        let parsed = parse_questions(&sample());
+        assert_eq!(parsed.len(), 2);
+        assert!(parsed[0].fingerprint.is_none());
+        assert!(parsed[1].fingerprint.is_none());
+    }
+
+    #[test]
+    fn matches_by_fingerprint_when_title_drifts() {
+        // Same fingerprint, but the title has been edited by the user.
+        let updated = patch_question_answer(
+            &fingerprinted_sample(),
+            Some("q-aaaaaaaaaaaaaaaa"),
+            "Title that no longer matches",
+            "My answer.",
+        )
+        .unwrap();
+        assert!(updated.contains("## [ANSWERED] First question"));
+        assert!(updated.contains("> My answer."));
+        // Second question untouched.
+        assert!(updated.contains("## [PENDING] Second question"));
+    }
+
+    #[test]
+    fn fingerprint_match_falls_back_to_title_when_unknown() {
+        // Fingerprint not in file → fall back to title.
+        let updated = patch_question_answer(
+            &fingerprinted_sample(),
+            Some("q-doesnotexist"),
+            "Second question",
+            "Answer.",
+        )
+        .unwrap();
+        assert!(updated.contains("## [ANSWERED] Second question"));
+    }
+
+    #[test]
+    fn fingerprint_match_refuses_processed_entries() {
+        let processed = fingerprinted_sample()
+            .replace("[PENDING] First question", "[PROCESSED 2026-04-28] First question");
+        assert!(patch_question_answer(
+            &processed,
+            Some("q-aaaaaaaaaaaaaaaa"),
+            "First question",
+            "x",
+        )
+        .is_none());
     }
 }
