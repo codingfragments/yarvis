@@ -93,13 +93,18 @@ export function getDashboardStore() {
 			}
 		},
 
-		async answerQuestion(dailyDir: string, title: string, answer: string) {
+		async answerQuestion(
+			dailyDir: string,
+			fingerprint: string | null,
+			title: string,
+			answer: string
+		) {
 			if (!isTauri()) {
 				throw new Error('Answering questions requires Tauri runtime.');
 			}
 			submittingAnswer = true;
 			try {
-				await dashboardService.answerQuestion(dailyDir, title, answer);
+				await dashboardService.answerQuestion(dailyDir, fingerprint, title, answer);
 				questions = await dashboardService.readQuestions(dailyDir);
 			} finally {
 				submittingAnswer = false;

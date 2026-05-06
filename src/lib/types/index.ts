@@ -365,6 +365,7 @@ export interface DashboardQuestion {
 	asked: string | null;
 	run: string | null;
 	context: string | null;
+	fingerprint: string | null;
 	body: string;
 	answer: string | null;
 }

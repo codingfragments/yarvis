@@ -80,7 +80,7 @@
 				/>
 			{:else}
 				<ul class="flex flex-col gap-2.5">
-					{#each visibleQuestions as q (q.title)}
+					{#each visibleQuestions as q (q.fingerprint ?? q.title)}
 						{@const editable = q.status !== 'PROCESSED'}
 						<li
 							class="group rounded-lg border bg-base-100/40 px-4 py-3 transition-colors"

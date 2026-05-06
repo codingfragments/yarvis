@@ -1,6 +1,6 @@
 ---
 name: daily-dashboard
-version: 1.2.0
+version: 1.3.0
 description: "Generates and updates the daily intelligence briefing as a structured JSON file. Invoked ONLY by the explicit slash command /daily-dashboard — never auto-triggered. Supports optional arguments: config={path} (default: src/daily) — points at the user's briefing_config.yaml; target={path} (default: briefings/daily) — where daily.json lives; force=full|midday|incremental (override automatic run-type detection). Reads briefing_config.yaml from the config directory; reads briefing_schema.md, briefing_schema.json, and runs validate_briefing.py from the skill's own bundle directory; reads+writes daily.json to the target directory; maintains memory.md and question.md in the target directory across runs. Output is always JSON only — never generates an HTML dashboard or widget unless the user explicitly requests one after the skill has run."
 ---
 
@@ -723,6 +723,12 @@ After successfully writing `daily.json`:
      - "Did [person] confirm [decision/next step]?"
    - Do NOT ask about: email action items Stefan needs to take, calendar conflicts he needs to resolve, administrative tasks. Those belong in `action_items[]`.
    - Limit: add at most 3 new questions per run to avoid fatigue
+   - **Dedup by fingerprint (mandatory):**
+     - Build the dedup index from `question.md`: collect every `**Fingerprint:**` value already in the file, regardless of status (`[PENDING]`, `[ANSWERED]`, `[PROCESSED]`).
+     - For each candidate question, compute its fingerprint per the **Question fingerprint** rules below.
+     - If the fingerprint is already in the index → **skip** the candidate. Do not append. Do not flip an existing entry's status.
+     - Otherwise → append a new `[PENDING]` block that includes a `**Fingerprint:** {fp}` line.
+     - Legacy entries without a fingerprint don't participate in dedup — they remain as audit trail and don't block new questions on the same topic.
 
 4. **Print the run summary** (Phase 6 below)
 
@@ -868,6 +874,7 @@ After all files are written (or after a validation failure), print a brief plain
 ## [PENDING] Question written by skill
 
 **Asked:** 2026-04-27 · **Run:** full
+**Fingerprint:** q-1a2b3c4d5e6f7890
 **Context:** You had a 19:00 meeting conflict between two events.
 
 Which 19:00 meeting did you attend — **CorpDev Team Meeting** or **Bits AI Sec Exec Update**?
@@ -879,6 +886,7 @@ Which 19:00 meeting did you attend — **CorpDev Team Meeting** or **Bits AI Sec
 ## [ANSWERED] Question the user has replied to
 
 **Asked:** 2026-04-27 · **Run:** full
+**Fingerprint:** q-fedcba9876543210
 **Context:** Meticulous was on the calendar for today.
 
 Did the Meticulous call with Ignacio happen on Apr 27? What was the outcome?
@@ -890,6 +898,7 @@ Did the Meticulous call with Ignacio happen on Apr 27? What was the outcome?
 ## [PROCESSED 2026-04-28] Already stored to memory
 
 **Asked:** 2026-04-27 · **Run:** full
+**Fingerprint:** q-fedcba9876543210
 **Context:** Meticulous was on the calendar for today.
 
 Did the Meticulous call with Ignacio happen on Apr 27? What was the outcome?
@@ -905,6 +914,40 @@ Did the Meticulous call with Ignacio happen on Apr 27? What was the outcome?
 - **Processing flow:** `[PENDING]` → user edits file and changes to `[ANSWERED]` (or just adds answer text) → skill detects and changes to `[PROCESSED YYYY-MM-DD]` with a stored-fact annotation.
 - **The skill detects answers** by checking if there is non-empty text after the `> ` prompt line. If text is present, treat as `[ANSWERED]` regardless of whether the user updated the status tag.
 - **Removing questions:** The skill never removes questions from the file — it only advances their status. This preserves the audit trail. The file grows over time; old `[PROCESSED]` entries can be manually archived.
+
+### Question fingerprint
+
+Every newly written question carries a stable `**Fingerprint:**` line so re-runs skip duplicates instead of re-appending the same question. Format: `q-{first 16 hex chars of sha1(normalized_text)}`.
+
+**Normalization** (apply in order to the question's title text — the line after `## [STATUS]`):
+
+1. Lowercase.
+2. Collapse all runs of whitespace (incl. tabs, newlines) to a single space.
+3. Strip leading and trailing punctuation: `?`, `.`, `!`, `,`, `;`, `:`, quotes, parens, dashes, asterisks.
+4. Trim leading/trailing whitespace.
+
+**Examples**
+
+| Title | Normalized | Fingerprint |
+|---|---|---|
+| `Did the Aspen meeting happen on Apr 27?` | `did the aspen meeting happen on apr 27` | `q-{sha1_16}` |
+| `What was the outcome of the Adaptive ML sync?` | `what was the outcome of the adaptive ml sync` | `q-{sha1_16}` |
+
+**Reference (Python)**
+
+```python
+import hashlib, re
+def question_fingerprint(title: str) -> str:
+    norm = re.sub(r"\s+", " ", title.lower())
+    norm = norm.strip(" ?.!,;:\"'()[]{}-*")
+    return "q-" + hashlib.sha1(norm.encode()).hexdigest()[:16]
+```
+
+**Use:**
+
+- When generating new questions in Phase 5 step 3, compute the fingerprint and skip the candidate if any existing entry in `question.md` (PENDING / ANSWERED / PROCESSED) carries the same `**Fingerprint:**`.
+- The `**Fingerprint:**` line goes immediately after `**Asked:**` (and before `**Context:**` if present).
+- Yarvis uses the fingerprint as a stable match key when the user edits the answer; legacy entries without a fingerprint still match by title.
 
 ---
 

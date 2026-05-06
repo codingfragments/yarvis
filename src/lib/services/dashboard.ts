@@ -36,10 +36,11 @@ export async function readQuestions(dailyDir: string): Promise<DashboardQuestion
 
 export async function answerQuestion(
 	dailyDir: string,
+	fingerprint: string | null,
 	title: string,
 	answer: string
 ): Promise<void> {
-	return invoke<void>('answer_question', { dailyDir, title, answer });
+	return invoke<void>('answer_question', { dailyDir, fingerprint, title, answer });
 }
 
 export async function setActionDone(
