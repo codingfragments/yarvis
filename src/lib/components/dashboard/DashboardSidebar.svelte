@@ -4,7 +4,7 @@
 	import ActionItem from './ActionItem.svelte';
 	import Chip from './Chip.svelte';
 	import EmptyState from './EmptyState.svelte';
-	import { priorityRank } from '$lib/dashboard/format';
+	import { formatTimeInZone, priorityRank } from '$lib/dashboard/format';
 
 	interface Props {
 		actions: ActionItemData[];
@@ -12,11 +12,12 @@
 		fun: Fun | null;
 		lensActive: boolean;
 		lensName: string | null;
+		timezone: string | null;
 		dealById: (id: string | null | undefined) => ActiveDealDef | null;
 		onOpenPrep: (p: MeetingPrep) => void;
 	}
 
-	let { actions, preps, fun, lensActive, lensName, dealById, onOpenPrep }: Props = $props();
+	let { actions, preps, fun, lensActive, lensName, timezone, dealById, onOpenPrep }: Props = $props();
 
 	let actionsOpen = $state(true);
 	let prepsOpen = $state(false);
@@ -80,7 +81,7 @@
 					{#each preps as p}
 						{@const deal = dealById(p.deal_tag)}
 						<li class="flex items-center gap-2 text-xs">
-							<span class="font-mono text-base-content/50 w-12">{p.time}</span>
+							<span class="font-mono text-base-content/50 w-12">{formatTimeInZone(p.time_iso, timezone, p.time)}</span>
 							<span class="flex-1 truncate text-base-content/80" title={p.title}>{p.title}</span>
 							<Chip {deal} fallbackId={p.deal_tag} />
 							{#if p.file}

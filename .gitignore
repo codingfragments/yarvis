@@ -38,3 +38,4 @@ specs/plan.md
 
 # Skill: user-specific config containing real deal data, exec emails, channel ids
 ai/briefing_config.yaml
+.playwright-mcp

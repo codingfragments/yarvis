@@ -165,7 +165,7 @@ Phase 3 has two execution paths depending on the environment detected in Phase 0
 Run these waves in order (each wave completes before the next starts):
 
 **Wave 1 — Calendar + Email:**
-- **Calendar:** Fetch all events for today (00:00–23:59 user timezone) via Google Calendar MCP. Extract: title, time, duration, attendees, location/video link, description, htmlLink. Classify each event per `briefing_config.yaml calendar_classification` rules.
+- **Calendar:** Fetch all events for today (00:00–23:59 user timezone) via Google Calendar MCP. Extract: title, time, duration, attendees, location/video link, description, htmlLink. Classify each event per `briefing_config.yaml calendar_classification` rules. **Time fields must be normalised to `user.timezone` — see Phase 3.5 Step 0 below.** The Google Calendar MCP returns each event's start/end in its source-calendar timezone (often UTC, sometimes the organiser's TZ); emit `start_iso`/`end_iso` with the user-timezone offset and `start`/`end` as the matching local HH:MM.
 - **Email:** Run 3 simultaneous queries via Gmail MCP:
   - `is:unread to:me` (direct recipient, last `email_lookback_hours` hours)
   - `is:important is:unread`
@@ -407,6 +407,23 @@ The count of resolved channels and any unresolved warnings are included in the P
 ## Phase 3.5 — Tagging & Classification
 
 After all data is gathered and before assembling the JSON, apply these rules to every calendar event, email item, and Slack message. Steps are cumulative — a later step adds to what an earlier step set, but never overrides a value already assigned.
+
+---
+
+### Step 0 — Normalise time fields to `user.timezone`
+
+**Hard rule.** Every time-bearing field in the briefing JSON refers to the same instant expressed in `user.timezone` (from `briefing_config.yaml`, mirrored as `meta.timezone`). The display side renders these strings verbatim — there is no second conversion downstream.
+
+Apply to every calendar event and every meeting prep, regardless of what TZ the source system returned:
+
+1. **Compute the absolute instant** from whatever the MCP returned (UTC `Z`, source-calendar offset, etc.).
+2. **Emit the ISO field** (`start_iso`, `end_iso`, `time_iso`, `meta.next_meeting.starts_at`, `meta.generated_at`, `meta.last_successful_run`) with the `user.timezone` offset for that instant — e.g. for `Europe/Berlin` in May, `+02:00` (CEST); in January, `+01:00` (CET). Don't emit `Z` unless `user.timezone` actually resolves to UTC.
+3. **Emit the HH:MM field** (`start`, `end`, `meeting_preps[].time`, `calendar.conflicts[].time`) as the wall-clock of the same instant in `user.timezone`. `start_iso` substring must match `start`.
+4. **Free-text strings** that include times (`calendar.summary`, `greeting.context_note`, `notes`, `description`) must use the same `user.timezone` wall-clock — never mix CEST and PT in the same briefing.
+
+Failing this rule shows the wrong wall-clock in Yarvis. The UI prefers `*_iso` for rendering and falls back to the HH:MM string, so a mismatch between the two surfaces immediately as drift between the row time and the summary line.
+
+> 🧪 **Self-check before Phase 4 write:** for each `calendar.events[]` entry, assert `start === HH:MM(start_iso, user.timezone)`. If any event fails, fix it before writing — do not ship the JSON with a known TZ mismatch.
 
 ---
 

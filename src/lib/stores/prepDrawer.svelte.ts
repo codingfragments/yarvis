@@ -15,13 +15,13 @@ class PrepDrawer {
 		return this.meta ? `${this.meta.time} · ${this.meta.filename}` : null;
 	}
 
-	async openPrep(p: MeetingPrep, briefingsDir: string, briefingDate: string) {
+	async openPrep(p: MeetingPrep, briefingsDir: string, briefingDate: string, timeLabel?: string) {
 		if (!p.file) return;
 		// Load content BEFORE opening the popup so the viewer mounts with the
 		// markdown already in place. Mirrors the memory-viewer flow and avoids
 		// a Svelte 5 prod-mode race where the post-mount reactive update for
 		// the conditional sometimes fails to render the markdown body.
-		this.meta = { title: p.title, time: p.time, filename: p.file };
+		this.meta = { title: p.title, time: timeLabel ?? p.time, filename: p.file };
 		this.content = null;
 		this.error = null;
 		try {

@@ -111,7 +111,7 @@ Prepared meeting brief files for today's external meetings.
 
 | Field | Type | Description |
 |---|---|---|
-| `time` | `"HH:MM"` | Meeting start time in local timezone. Used for sorting and display. |
+| `time` | `"HH:MM"` | Meeting start time as wall-clock in `meta.timezone`. Used for sorting and display. **Must match `time_iso` formatted in `meta.timezone`** (see Time normalisation in `calendar.events[]`). |
 | `title` | string | Human-readable meeting title, matching the calendar event title. |
 | `file` | string \| null | Filename of the prep document, relative to the day's briefing folder (e.g. `briefings/2026_04_27/`). The display component should link this as a `computer://` path. |
 | `deal_tag` | string \| null | Deal id from `briefing_config.yaml`. Null for prep docs not tied to a specific deal. |
@@ -166,8 +166,8 @@ A one-line human characterization of the day's shape. Written by the generation 
 
 | Field | Type | Description |
 |---|---|---|
-| `start` | `"HH:MM"` | Start time in local timezone. |
-| `end` | `"HH:MM"` | End time in local timezone. |
+| `start` | `"HH:MM"` | Start time as wall-clock in `meta.timezone`. **Must match `start_iso` formatted in `meta.timezone`** — see "Time normalisation" below. |
+| `end` | `"HH:MM"` | End time as wall-clock in `meta.timezone`. **Must match `end_iso` formatted in `meta.timezone`.** |
 | `title` | string | Event title as it appears in calendar. |
 | `participants` | string[] | List of participant names or email addresses. Omit Stefan himself — implied. |
 | `type` | enum | `"external"` \| `"internal"` \| `"personal_block"` \| `"personal"` \| `"declined"`. Determined by classification rules in `briefing_config.yaml`. |
@@ -180,12 +180,14 @@ A one-line human characterization of the day's shape. Written by the generation 
 | `links.other` | string \| null | Any other relevant link (calendar invite, spreadsheet, etc.). |
 | `notes` | string \| null | Short qualifier: deal stage, who's present (especially executives), priority signal, or prep status. |
 | `id` | string \| null | Producer-side stable event identifier (e.g. `cal_4`). Optional. |
-| `start_iso` | ISO 8601 \| null | Full timestamp of `start` (mirror with timezone). Optional. |
-| `end_iso` | ISO 8601 \| null | Full timestamp of `end`. Optional. |
+| `start_iso` | ISO 8601 \| null | Full timestamp of `start` with `meta.timezone` offset. Optional in the schema, but the display side prefers it over `start` for rendering — emit it whenever the absolute instant is known. |
+| `end_iso` | ISO 8601 \| null | Full timestamp of `end` with `meta.timezone` offset. Same guidance as `start_iso`. |
 | `category` | enum \| null | Same enum as `type`. Currently a duplicate of `type`; producer emits both. Optional. |
 | `rsvp_status` | string \| null | Stefan's RSVP state on the invite (`accepted`, `tentative`, `declined`, `needsAction`). Optional. |
 | `location` | string \| null | Physical location or room. Optional. |
 | `action` | string \| null | Per-event action item if any (separate from the cross-source `action_items[]` synthesis). Optional. |
+
+**Time normalisation:** Every time-bearing field in the briefing — `start`, `end`, `start_iso`, `end_iso`, `meeting_preps[].time` / `time_iso`, `calendar.conflicts[].time`, `meta.next_meeting.starts_at`, `meta.generated_at`, `meta.last_successful_run`, and any free-text "(HH:MM CEST)" hints inside `summary` / `notes` / `context_note` — refers to the same instant expressed in `meta.timezone`. The producer is responsible for the conversion: the Google Calendar MCP returns events in their source-calendar TZ (often UTC), but the briefing JSON commits to `meta.timezone` as its single render target. The HH:MM string MUST equal the ISO field formatted in `meta.timezone`; mismatches surface immediately in the dashboard because the UI prefers ISO and falls back to HH:MM.
 
 **Rendering:** Render as a timeline table. Rows are sorted by `start`. Apply visual weight by `type` and `urgency`:
 - `external` + `urgency: critical/high` → bold title, red left border

@@ -3,15 +3,16 @@
 	import AccentRow from './AccentRow.svelte';
 	import Chip from './Chip.svelte';
 	import ExternalLink from './ExternalLink.svelte';
-	import { rowAccent } from '$lib/dashboard/format';
+	import { formatTimeInZone, rowAccent } from '$lib/dashboard/format';
 	import { openUrl } from '$lib/services/tauri';
 
 	interface Props {
 		event: CalendarEvent;
 		deal: ActiveDealDef | null;
+		timezone: string | null;
 	}
 
-	let { event: e, deal }: Props = $props();
+	let { event: e, deal, timezone }: Props = $props();
 
 	let expanded = $state(false);
 
@@ -20,6 +21,10 @@
 	const muted = $derived(e.type === 'personal_block' || e.type === 'personal');
 	// Per schema, links.other holds the Google Calendar event htmlLink.
 	const calendarUrl = $derived(e.links?.other ?? null);
+	// Prefer the offset-bearing ISO timestamps; fall back to the bare HH:MM
+	// strings if the producer ever omits ISO (schema marks them optional).
+	const startLabel = $derived(formatTimeInZone(e.start_iso, timezone, e.start));
+	const endLabel = $derived(formatTimeInZone(e.end_iso, timezone, e.end));
 
 	function navigateToEvent() {
 		if (calendarUrl) void openUrl(calendarUrl);
@@ -38,7 +43,7 @@
 				: ''}"
 			ondblclick={navigateToEvent}
 			title={calendarUrl ? 'Double-click to open in calendar' : undefined}
-		>{e.start}–{e.end}</div>
+		>{startLabel}–{endLabel}</div>
 	{/snippet}
 
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
