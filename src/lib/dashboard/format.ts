@@ -107,3 +107,46 @@ export function fmtClock(input: Date | string | null | undefined): string {
 	const mm = String(input.getMinutes()).padStart(2, '0');
 	return `${hh}:${mm}`;
 }
+
+// Cache `Intl.DateTimeFormat` per timezone — constructing it is the expensive
+// part of `Intl`, and a single calendar render touches the same TZ on every row.
+const tzFormatterCache = new Map<string, Intl.DateTimeFormat>();
+
+function getTimeFormatter(timeZone: string): Intl.DateTimeFormat | null {
+	const cached = tzFormatterCache.get(timeZone);
+	if (cached) return cached;
+	try {
+		const fmt = new Intl.DateTimeFormat('en-GB', {
+			timeZone,
+			hour: '2-digit',
+			minute: '2-digit',
+			hourCycle: 'h23',
+		});
+		tzFormatterCache.set(timeZone, fmt);
+		return fmt;
+	} catch {
+		return null;
+	}
+}
+
+/**
+ * Format an ISO 8601 datetime into HH:MM in the given IANA timezone, falling
+ * back to `fallback` (the schema's `time_hhmm` string) when the ISO is missing,
+ * the timezone is unknown, or parsing fails.
+ *
+ * Used for calendar event times and meeting prep times — the schema provides
+ * both the bare HH:MM (local to the briefing's `meta.timezone`) and the ISO
+ * with offset, but the ISO is the unambiguous source of truth.
+ */
+export function formatTimeInZone(
+	iso: string | null | undefined,
+	timeZone: string | null | undefined,
+	fallback: string
+): string {
+	if (!iso || !timeZone) return fallback;
+	const fmt = getTimeFormatter(timeZone);
+	if (!fmt) return fallback;
+	const d = new Date(iso);
+	if (Number.isNaN(d.getTime())) return fallback;
+	return fmt.format(d);
+}

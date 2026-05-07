@@ -11,10 +11,11 @@
 		conflicts: Conflict[];
 		lensActive: boolean;
 		lensName: string | null;
+		timezone: string | null;
 		dealById: (id: string | null | undefined) => ActiveDealDef | null;
 	}
 
-	let { calendar, events, conflicts, lensActive, lensName, dealById }: Props = $props();
+	let { calendar, events, conflicts, lensActive, lensName, timezone, dealById }: Props = $props();
 
 	const conflictsNeedingAction = $derived(conflicts.filter((c) => c.action_needed).length);
 </script>
@@ -54,7 +55,7 @@
 	{/if}
 	<ul class="flex flex-col gap-1">
 		{#each events as e}
-			<CalendarEvent event={e} deal={dealById(e.deal_tag)} />
+			<CalendarEvent event={e} deal={dealById(e.deal_tag)} {timezone} />
 		{/each}
 	</ul>
 </div>

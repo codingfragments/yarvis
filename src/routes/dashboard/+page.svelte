@@ -6,6 +6,7 @@
 	import { getRefreshStore } from '$lib/stores/refresh.svelte';
 	import { getPrepDrawerStore } from '$lib/stores/prepDrawer.svelte';
 	import { openUrl } from '$lib/services/tauri';
+	import { formatTimeInZone } from '$lib/dashboard/format';
 	import type { DashboardQuestion, MeetingPrep } from '$lib/types';
 	import MarkdownViewer from '$lib/components/dashboard/MarkdownViewer.svelte';
 	import QuestionEditor from '$lib/components/dashboard/QuestionEditor.svelte';
@@ -111,7 +112,8 @@
 		await prep.openPrep(
 			p,
 			settings.current.briefings_dir,
-			dashboard.briefing.meta.briefing_date
+			dashboard.briefing.meta.briefing_date,
+			formatTimeInZone(p.time_iso, dashboard.briefing.meta.timezone, p.time)
 		);
 	}
 
@@ -166,6 +168,7 @@
 				fun={b.fun ?? null}
 				lensActive={view.lensActive}
 				lensName={view.lensName}
+				timezone={b.meta.timezone}
 				dealById={(id) => dashboard.dealById(id)}
 				onOpenPrep={openPrep}
 			/>
@@ -191,6 +194,7 @@
 							conflicts={view.filteredConflicts}
 							lensActive={view.lensActive}
 							lensName={view.lensName}
+							timezone={b.meta.timezone}
 							dealById={(id) => dashboard.dealById(id)}
 						/>
 					{:else if tab === 'email' && b.email}

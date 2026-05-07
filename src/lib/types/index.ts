@@ -196,6 +196,8 @@ export interface Greeting {
 
 export interface MeetingPrep {
 	time: string;
+	// ISO 8601 with TZ offset — preferred over `time` for rendering.
+	time_iso?: string | null;
 	title: string;
 	file: string | null;
 	deal_tag: string | null;
@@ -210,6 +212,10 @@ export interface Calendar {
 export interface CalendarEvent {
 	start: string;
 	end: string;
+	// ISO 8601 with TZ offset — preferred over `start`/`end` for rendering
+	// because the offset is unambiguous. Schema marks both optional.
+	start_iso?: string | null;
+	end_iso?: string | null;
 	title: string;
 	participants: string[];
 	type: EventType;
