@@ -4,6 +4,7 @@
 	import ActionItem from './ActionItem.svelte';
 	import Chip from './Chip.svelte';
 	import EmptyState from './EmptyState.svelte';
+	import Overlay from './Overlay.svelte';
 	import { formatTimeInZone, priorityRank } from '$lib/dashboard/format';
 
 	interface Props {
@@ -22,7 +23,10 @@
 	let actionsOpen = $state(true);
 	let prepsOpen = $state(false);
 	let funShowJoke = $state(false);
+	let funOverlayOpen = $state(false);
 	let openOnly = $state(false);
+
+	const hasBothFunSides = $derived(!!(fun?.fact && fun?.joke));
 
 	const visibleActions = $derived.by(() => {
 		const filtered = openOnly ? actions.filter((a) => !a.done) : actions;
@@ -99,17 +103,61 @@
 	{/if}
 
 	{#if fun && (fun.fact || fun.joke)}
-		<button
-			class="md:shrink-0 rounded-xl bg-gradient-to-br from-secondary/10 via-accent/5 to-primary/10 border border-base-content/5 p-3 text-left hover:scale-[1.01] transition-transform"
-			onclick={() => (funShowJoke = !funShowJoke)}
-			title="Click to flip"
-		>
-			<div class="text-xs uppercase tracking-wider text-base-content/50 mb-1">
-				{funShowJoke ? '😄 Joke' : '✨ Fun fact'}
-			</div>
-			<p class="text-xs text-base-content/80 leading-relaxed line-clamp-4">
-				{funShowJoke ? (fun.joke ?? fun.fact) : (fun.fact ?? fun.joke)}
-			</p>
-		</button>
+		<div class="md:shrink-0 relative">
+			<button
+				class="w-full block rounded-xl bg-gradient-to-br from-secondary/10 via-accent/5 to-primary/10 border border-base-content/5 p-3 text-left hover:scale-[1.01] transition-transform"
+				onclick={() => (funOverlayOpen = true)}
+				title="Click to read in full"
+			>
+				<div class="text-xs uppercase tracking-wider text-base-content/50 mb-1 {hasBothFunSides ? 'pr-7' : ''}">
+					{funShowJoke ? '😄 Joke' : '✨ Fun fact'}
+				</div>
+				<p class="text-xs text-base-content/80 leading-relaxed line-clamp-4">
+					{funShowJoke ? (fun.joke ?? fun.fact) : (fun.fact ?? fun.joke)}
+				</p>
+			</button>
+			{#if hasBothFunSides}
+				<button
+					class="absolute top-2 right-2 h-6 w-6 rounded-md text-base-content/40 hover:text-base-content hover:bg-base-300/50 text-sm leading-none"
+					onclick={(e) => {
+						e.stopPropagation();
+						funShowJoke = !funShowJoke;
+					}}
+					title="Flip to {funShowJoke ? 'fun fact' : 'joke'}"
+					aria-label="Flip teaser between fun fact and joke"
+				>↻</button>
+			{/if}
+		</div>
 	{/if}
 </aside>
+
+<Overlay
+	open={funOverlayOpen}
+	onClose={() => (funOverlayOpen = false)}
+	icon="✨"
+	title="Fun"
+	size="sm"
+>
+	<div class="px-5 py-4 flex flex-col gap-4 overflow-y-auto">
+		{#if fun?.fact}
+			<section>
+				<h3 class="text-xs uppercase tracking-wider text-base-content/50 font-semibold mb-2">
+					✨ Fun fact
+				</h3>
+				<p class="text-sm text-base-content/85 leading-relaxed whitespace-pre-wrap break-words">
+					{fun.fact}
+				</p>
+			</section>
+		{/if}
+		{#if fun?.joke}
+			<section>
+				<h3 class="text-xs uppercase tracking-wider text-base-content/50 font-semibold mb-2">
+					😄 Joke
+				</h3>
+				<p class="text-sm text-base-content/85 leading-relaxed whitespace-pre-wrap break-words">
+					{fun.joke}
+				</p>
+			</section>
+		{/if}
+	</div>
+</Overlay>
