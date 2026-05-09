@@ -118,14 +118,14 @@
 			</button>
 			{#if hasBothFunSides}
 				<button
-					class="absolute top-2 right-2 h-6 w-6 rounded-md grayscale hover:grayscale-0 opacity-60 hover:opacity-100 hover:bg-base-300/50 text-sm leading-none transition"
+					class="absolute top-2 right-2 h-6 w-6 rounded-md text-base-content/40 hover:text-base-content hover:bg-base-300/50 text-sm leading-none transition-colors"
 					onclick={(e) => {
 						e.stopPropagation();
 						funShowJoke = !funShowJoke;
 					}}
 					title="Flip to {funShowJoke ? 'fun fact' : 'joke'}"
 					aria-label="Flip teaser between fun fact and joke"
-				>🪙</button>
+				>⇄</button>
 			{/if}
 		</div>
 	{/if}
