@@ -10,6 +10,16 @@
 	const appVersion = pkg.version;
 
 	let { children } = $props();
+
+	let renderError = $state<{ message: string; reset: () => void } | null>(null);
+
+	function handleRenderError(error: unknown, reset: () => void) {
+		console.error('[Yarvis] Render error:', error);
+		renderError = {
+			message: error instanceof Error ? error.message : String(error),
+			reset
+		};
+	}
 	const settingsStore = getSettingsStore();
 	const refresh = getRefreshStore();
 
@@ -72,8 +82,53 @@
 
 	<!-- Main content -->
 	<main class="pt-14 pb-10 min-h-screen">
-		{@render children()}
+		<svelte:boundary onerror={handleRenderError}>
+			{@render children()}
+			{#snippet failed()}
+				<div class="flex flex-col items-center justify-center h-64 gap-2 text-base-content/30">
+					<span class="text-2xl" aria-hidden="true">⚠️</span>
+					<span class="text-sm">Page content unavailable — see error dialog</span>
+				</div>
+			{/snippet}
+		</svelte:boundary>
 	</main>
+
+	{#if renderError}
+		<!-- Error overlay dialog -->
+		<div class="fixed inset-0 z-50 flex items-center justify-center">
+			<button
+				type="button"
+				class="absolute inset-0 bg-base-300/60 backdrop-blur-sm cursor-default"
+				aria-label="Close error dialog"
+				onclick={() => (renderError = null)}
+			></button>
+			<div
+				role="dialog"
+				aria-modal="true"
+				aria-labelledby="render-error-title"
+				class="relative bg-base-100 border border-base-content/10 rounded-xl shadow-xl max-w-lg w-full mx-4 p-5"
+			>
+				<div class="flex items-start gap-3 mb-3">
+					<span class="text-xl mt-0.5" aria-hidden="true">⚠️</span>
+					<div>
+						<h2 id="render-error-title" class="text-sm font-semibold text-error">Rendering error</h2>
+						<p class="text-xs text-base-content/60 mt-0.5">A component crashed and could not be displayed.</p>
+					</div>
+				</div>
+				<pre class="text-xs font-mono bg-base-200 rounded-lg px-3 py-2 overflow-auto max-h-40 text-error/80 whitespace-pre-wrap mb-4">{renderError.message}</pre>
+				<div class="flex justify-end gap-2">
+					<button
+						class="btn btn-sm btn-ghost"
+						onclick={() => { const r = renderError!.reset; renderError = null; r(); }}
+					>Retry</button>
+					<button
+						class="btn btn-sm btn-primary"
+						onclick={() => window.location.reload()}
+					>Reload App</button>
+				</div>
+			</div>
+		</div>
+	{/if}
 
 	<!-- Status bar -->
 	<StatusBar version={appVersion} />

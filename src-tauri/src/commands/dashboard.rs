@@ -518,7 +518,21 @@ pub fn read_questions(daily_dir: String) -> Result<Vec<DashboardQuestion>, Strin
         return Ok(Vec::new());
     }
     let raw = fs::read_to_string(&path).map_err(|e| format!("Failed to read question.md: {}", e))?;
-    Ok(parse_questions(&raw))
+    let all = parse_questions(&raw);
+    // Deduplicate by fingerprint, keeping the last occurrence (later runs have better context).
+    let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
+    let mut deduped: Vec<DashboardQuestion> = Vec::with_capacity(all.len());
+    for q in all.into_iter().rev() {
+        if let Some(fp) = &q.fingerprint {
+            if seen.insert(fp.clone()) {
+                deduped.push(q);
+            }
+        } else {
+            deduped.push(q);
+        }
+    }
+    deduped.reverse();
+    Ok(deduped)
 }
 
 /// Replace the answer block of a question and flip its status header.
