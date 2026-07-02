@@ -374,8 +374,13 @@ fn resolve_meeting_preps(
     briefing_date: &str,
     preps: Vec<MeetingPrep>,
 ) -> Vec<MeetingPrep> {
-    let folder_name = briefing_date.replace('-', "_");
-    let dated_dir = briefings_root.join(&folder_name);
+    // Support both YYYY_MM_DD (legacy) and YYYY-MM-DD (current briefing skill output).
+    let underscore_name = briefing_date.replace('-', "_");
+    let dated_dir = [&underscore_name, briefing_date]
+        .iter()
+        .map(|name| briefings_root.join(name))
+        .find(|p| p.is_dir())
+        .unwrap_or_else(|| briefings_root.join(&underscore_name));
     if !dated_dir.is_dir() {
         return Vec::new();
     }
