@@ -1,0 +1,73 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  release:
+    name: Build & Release
+    runs-on: macos-14  # Apple Silicon (arm64) — matches the aarch64 bundle target
+    permissions:
+      contents: write  # required to create GitHub releases
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin
+
+      - name: Cache Rust build artefacts
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      - name: Install JS dependencies
+        run: bun install
+
+      - name: Build Tauri app
+        run: bun run tauri:build
+
+      - name: Collect artefact info
+        id: artifact
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          DMG="src-tauri/target/release/bundle/dmg/Yarvis_${VERSION}_aarch64.dmg"
+          SHA256="$(shasum -a 256 "$DMG" | awk '{print $1}')"
+          echo "version=$VERSION"   >> "$GITHUB_OUTPUT"
+          echo "dmg=$DMG"           >> "$GITHUB_OUTPUT"
+          echo "sha256=$SHA256"     >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.artifact.outputs.dmg }}
+          generate_release_notes: true
+
+      - name: Update Homebrew tap
+        env:
+          TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          VERSION="${{ steps.artifact.outputs.version }}"
+          SHA256="${{ steps.artifact.outputs.sha256 }}"
+
+          git clone "https://x-access-token:${TAP_TOKEN}@github.com/codingfragments/homebrew-tap.git" /tmp/tap
+          cd /tmp/tap
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+
+          # BSD sed (macOS runner) requires an explicit backup extension for -i;
+          # '' means no backup file.
+          sed -i '' "s/version \"[^\"]*\"/version \"${VERSION}\"/" Casks/yarvis.rb
+          sed -i '' "s/sha256 \"[^\"]*\"/sha256 \"${SHA256}\"/"   Casks/yarvis.rb
+
+          git add Casks/yarvis.rb
+          git commit -m "chore: update yarvis cask to v${VERSION}"
+          git push
