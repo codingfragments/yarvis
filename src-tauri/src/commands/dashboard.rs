@@ -384,6 +384,13 @@ fn resolve_meeting_preps(
     if !dated_dir.is_dir() {
         return Vec::new();
     }
+    // Capture the actual folder name so p.file can be stored as "folder/basename",
+    // giving read_prep an unambiguous relative path with no date-format guesswork.
+    let folder_name = dated_dir
+        .file_name()
+        .and_then(|s| s.to_str())
+        .unwrap_or(briefing_date)
+        .to_string();
 
     let mut prep_files: Vec<String> = match fs::read_dir(&dated_dir) {
         Ok(entries) => entries
@@ -416,7 +423,7 @@ fn resolve_meeting_preps(
                 if !path.is_file() {
                     return None;
                 }
-                p.file = Some(basename);
+                p.file = Some(format!("{}/{}", folder_name, basename));
                 return Some(p);
             }
             // Legacy fallback: file field is null, locate by time-prefix.
@@ -426,7 +433,7 @@ fn resolve_meeting_preps(
                 .iter()
                 .find(|name| name.starts_with(&prefix))
                 .map(|name| {
-                    p.file = Some(name.clone());
+                    p.file = Some(format!("{}/{}", folder_name, name));
                     p
                 })
         })
@@ -456,27 +463,23 @@ pub fn read_memory(daily_dir: String) -> Result<String, String> {
     fs::read_to_string(&path).map_err(|e| format!("Failed to read memory.md: {}", e))
 }
 
-/// Read a single meeting-prep markdown file from the dated briefings folder.
-/// Refuses anything that isn't a `meeting-prep-*.md` (so morning-briefing
-/// files and arbitrary paths can never be opened through this command).
+/// Read a single meeting-prep markdown file.
+/// `file` must be the relative path stored by `resolve_meeting_preps` —
+/// exactly `"<dated-folder>/<basename>"` where basename is `meeting-prep-*.md`.
+/// Refuses path traversal and anything that isn't a meeting-prep file.
 #[tauri::command]
-pub fn read_prep(
-    briefings_dir: String,
-    briefing_date: String,
-    filename: String,
-) -> Result<String, String> {
-    if !filename.starts_with("meeting-prep-") || !filename.ends_with(".md") {
-        return Err(format!(
-            "Refusing to read non-prep file: {}",
-            filename
-        ));
-    }
-    if filename.contains('/') || filename.contains('\\') || filename.contains("..") {
+pub fn read_prep(briefings_dir: String, filename: String) -> Result<String, String> {
+    if filename.contains("..") || filename.contains('\\') {
         return Err("Invalid filename".to_string());
     }
-
-    let folder_name = briefing_date.replace('-', "_");
-    let path = resolve_dir(&briefings_dir).join(&folder_name).join(&filename);
+    let basename = std::path::Path::new(&filename)
+        .file_name()
+        .and_then(|s| s.to_str())
+        .unwrap_or("");
+    if !is_safe_prep_filename(basename) {
+        return Err(format!("Refusing to read non-prep file: {}", filename));
+    }
+    let path = resolve_dir(&briefings_dir).join(&filename);
     fs::read_to_string(&path).map_err(|e| format!("Failed to read {}: {}", filename, e))
 }
 

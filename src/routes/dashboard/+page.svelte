@@ -112,7 +112,6 @@
 		await prep.openPrep(
 			p,
 			settings.current.briefings_dir,
-			dashboard.briefing.meta.briefing_date,
 			formatTimeInZone(p.time_iso, dashboard.briefing.meta.timezone, p.time)
 		);
 	}
