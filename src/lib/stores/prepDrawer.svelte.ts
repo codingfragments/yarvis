@@ -15,7 +15,7 @@ class PrepDrawer {
 		return this.meta ? `${this.meta.time} · ${this.meta.filename}` : null;
 	}
 
-	async openPrep(p: MeetingPrep, briefingsDir: string, briefingDate: string, timeLabel?: string) {
+	async openPrep(p: MeetingPrep, briefingsDir: string, timeLabel?: string) {
 		if (!p.file) return;
 		// Load content BEFORE opening the popup so the viewer mounts with the
 		// markdown already in place. Mirrors the memory-viewer flow and avoids
@@ -25,7 +25,7 @@ class PrepDrawer {
 		this.content = null;
 		this.error = null;
 		try {
-			this.content = await readPrep(briefingsDir, briefingDate, p.file);
+			this.content = await readPrep(briefingsDir, p.file);
 		} catch (e) {
 			this.error = String(e);
 		} finally {

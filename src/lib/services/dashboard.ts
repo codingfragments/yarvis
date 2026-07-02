@@ -18,12 +18,8 @@ export async function readMemory(dailyDir: string): Promise<string> {
 	return invoke<string>('read_memory', { dailyDir });
 }
 
-export async function readPrep(
-	briefingsDir: string,
-	briefingDate: string,
-	filename: string
-): Promise<string> {
-	return invoke<string>('read_prep', { briefingsDir, briefingDate, filename });
+export async function readPrep(briefingsDir: string, filename: string): Promise<string> {
+	return invoke<string>('read_prep', { briefingsDir, filename });
 }
 
 export async function getDailyStatus(dailyDir: string): Promise<DailyStatus> {
