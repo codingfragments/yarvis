@@ -14,6 +14,8 @@
 		loading?: boolean;
 		error?: string | null;
 		onClose: () => void;
+		onOpenSource?: () => void;
+		onRevealSource?: () => void;
 	}
 
 	let {
@@ -24,7 +26,9 @@
 		content,
 		loading = false,
 		error = null,
-		onClose
+		onClose,
+		onOpenSource,
+		onRevealSource
 	}: Props = $props();
 
 	const MIN_QUERY_LENGTH = 2;
@@ -248,6 +252,24 @@
 
 <Overlay {open} {onClose} size="xl" {title} {subtitle} {icon} ariaLabel={title}>
 	{#snippet actions()}
+		{#if onRevealSource}
+			<button
+				class="btn btn-ghost btn-sm h-8 min-h-8 w-8 px-0 text-base"
+				onclick={onRevealSource}
+				title="Reveal in Finder"
+			>
+				📂
+			</button>
+		{/if}
+		{#if onOpenSource}
+			<button
+				class="btn btn-ghost btn-sm h-8 min-h-8 w-8 px-0 text-base"
+				onclick={onOpenSource}
+				title="Open in default app"
+			>
+				📑
+			</button>
+		{/if}
 		<button
 			class="btn btn-ghost btn-sm h-8 min-h-8 w-8 px-0 text-base"
 			class:btn-active={navOpen}
@@ -255,7 +277,7 @@
 			aria-pressed={navOpen}
 			title="Toggle outline"
 		>
-			📑
+			☰
 		</button>
 		<button
 			class="btn btn-ghost btn-sm h-8 min-h-8 w-8 px-0 text-base"

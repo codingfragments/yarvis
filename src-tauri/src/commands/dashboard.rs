@@ -463,6 +463,15 @@ pub fn read_memory(daily_dir: String) -> Result<String, String> {
     fs::read_to_string(&path).map_err(|e| format!("Failed to read memory.md: {}", e))
 }
 
+/// Opens memory.md with the user's default handler for `.md` files (e.g.
+/// Obsidian, MacDown, VS Code), or reveals it selected in Finder, via the
+/// macOS `open` command.
+#[tauri::command]
+pub fn open_memory_file(daily_dir: String, reveal: bool) -> Result<(), String> {
+    let path = resolve_dir(&daily_dir).join("memory.md");
+    open_with_finder(&path, reveal)
+}
+
 /// Read a single meeting-prep markdown file.
 /// `file` must be the relative path stored by `resolve_meeting_preps` —
 /// exactly `"<dated-folder>/<basename>"` where basename is `meeting-prep-*.md`.
@@ -481,6 +490,38 @@ pub fn read_prep(briefings_dir: String, filename: String) -> Result<String, Stri
     }
     let path = resolve_dir(&briefings_dir).join(&filename);
     fs::read_to_string(&path).map_err(|e| format!("Failed to read {}: {}", filename, e))
+}
+
+/// Opens a meeting-prep markdown file with the user's default handler for
+/// `.md` files, or reveals it selected in Finder. Mirrors `read_prep`'s
+/// validation.
+#[tauri::command]
+pub fn open_prep_file(briefings_dir: String, filename: String, reveal: bool) -> Result<(), String> {
+    if filename.contains("..") || filename.contains('\\') {
+        return Err("Invalid filename".to_string());
+    }
+    let basename = std::path::Path::new(&filename)
+        .file_name()
+        .and_then(|s| s.to_str())
+        .unwrap_or("");
+    if !is_safe_prep_filename(basename) {
+        return Err(format!("Refusing to open non-prep file: {}", filename));
+    }
+    let path = resolve_dir(&briefings_dir).join(&filename);
+    open_with_finder(&path, reveal)
+}
+
+/// Shells out to the macOS `open` command — plain to open with the default
+/// handler, `-R` to reveal the file selected in Finder instead.
+fn open_with_finder(path: &std::path::Path, reveal: bool) -> Result<(), String> {
+    let mut cmd = std::process::Command::new("open");
+    if reveal {
+        cmd.arg("-R");
+    }
+    cmd.arg(path)
+        .spawn()
+        .map_err(|e| format!("Failed to open {}: {}", path.display(), e))?;
+    Ok(())
 }
 
 #[tauri::command]
