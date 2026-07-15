@@ -22,6 +22,18 @@ export async function readPrep(briefingsDir: string, filename: string): Promise<
 	return invoke<string>('read_prep', { briefingsDir, filename });
 }
 
+export async function openMemoryFile(dailyDir: string, reveal = false): Promise<void> {
+	return invoke<void>('open_memory_file', { dailyDir, reveal });
+}
+
+export async function openPrepFile(
+	briefingsDir: string,
+	filename: string,
+	reveal = false
+): Promise<void> {
+	return invoke<void>('open_prep_file', { briefingsDir, filename, reveal });
+}
+
 export async function getDailyStatus(dailyDir: string): Promise<DailyStatus> {
 	return invoke<DailyStatus>('daily_status', { dailyDir });
 }

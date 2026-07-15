@@ -6,6 +6,7 @@
 	import { getRefreshStore } from '$lib/stores/refresh.svelte';
 	import { getPrepDrawerStore } from '$lib/stores/prepDrawer.svelte';
 	import { openUrl } from '$lib/services/tauri';
+	import { openMemoryFile, openPrepFile } from '$lib/services/dashboard';
 	import { formatTimeInZone } from '$lib/dashboard/format';
 	import type { DashboardQuestion, MeetingPrep } from '$lib/types';
 	import MarkdownViewer from '$lib/components/dashboard/MarkdownViewer.svelte';
@@ -242,6 +243,8 @@
 	subtitle={null}
 	content={dashboard.memory}
 	onClose={() => (memoryOpen = false)}
+	onOpenSource={() => openMemoryFile(settings.current.daily_dir).catch(console.error)}
+	onRevealSource={() => openMemoryFile(settings.current.daily_dir, true).catch(console.error)}
 />
 
 <MarkdownViewer
@@ -252,6 +255,15 @@
 	content={prep.content}
 	error={prep.error}
 	onClose={() => prep.close()}
+	onOpenSource={prep.meta
+		? () => openPrepFile(settings.current.briefings_dir, prep.meta!.filename).catch(console.error)
+		: undefined}
+	onRevealSource={prep.meta
+		? () =>
+				openPrepFile(settings.current.briefings_dir, prep.meta!.filename, true).catch(
+					console.error
+				)
+		: undefined}
 />
 
 <QuestionEditor
