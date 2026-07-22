@@ -11,7 +11,7 @@
 	import type { DashboardQuestion, MeetingPrep } from '$lib/types';
 	import MarkdownViewer from '$lib/components/dashboard/MarkdownViewer.svelte';
 	import QuestionEditor from '$lib/components/dashboard/QuestionEditor.svelte';
-	import DealLensBar from '$lib/components/dashboard/DealLensBar.svelte';
+	import LensBar from '$lib/components/dashboard/LensBar.svelte';
 	import CommandPalette from '$lib/components/dashboard/CommandPalette.svelte';
 	import DashboardHeader from '$lib/components/dashboard/DashboardHeader.svelte';
 	import DashboardSidebar from '$lib/components/dashboard/DashboardSidebar.svelte';
@@ -152,10 +152,13 @@
 	{#if dashboard.briefing}
 		{@const b = dashboard.briefing}
 
-		<DealLensBar
+		<LensBar
 			deals={dashboard.config?.active_deals ?? []}
-			selected={view.dealLens}
-			onSelect={(id) => (view.dealLens = id)}
+			initiatives={dashboard.config?.initiatives ?? []}
+			dealSelected={view.dealLens}
+			topicSelected={view.topicLens}
+			onSelectDeal={(id) => (view.dealLens = id)}
+			onSelectTopic={(id) => (view.topicLens = id)}
 		/>
 
 		<!-- Two-pane body -->
@@ -213,6 +216,8 @@
 							lensActive={view.lensActive}
 							lensName={view.lensName}
 							dealById={(id) => dashboard.dealById(id)}
+							onlyChannelsWithMessages={view.onlyChannelsWithMessages}
+							onToggleOnlyChannelsWithMessages={(v) => (view.onlyChannelsWithMessages = v)}
 						/>
 					{:else if tab === 'research'}
 						<ResearchTab

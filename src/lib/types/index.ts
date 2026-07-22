@@ -282,6 +282,7 @@ export interface SlackMessage {
 	summary: string;
 	links: NamedLink[];
 	action: string | null;
+	initiative: string | null;
 }
 
 export interface NamedLink {
@@ -324,6 +325,7 @@ export interface ActionItem {
 	fingerprint: string | null;
 	created_at: string | null;
 	completed_at: string | null;
+	initiative: string | null;
 }
 
 export interface Fun {
@@ -335,6 +337,7 @@ export interface BriefingConfig {
 	user: UserProfile | null;
 	intelligence_categories: IntelligenceCategoryDef[];
 	active_deals: ActiveDealDef[];
+	initiatives: InitiativeDef[];
 }
 
 export interface UserProfile {
@@ -355,6 +358,11 @@ export interface ActiveDealDef {
 	name: string;
 	stage: string | null;
 	color: string | null;
+}
+
+export interface InitiativeDef {
+	id: string;
+	label: string;
 }
 
 export interface DailyStatus {

@@ -4,6 +4,18 @@ import { buildSearchItems } from '$lib/dashboard/searchIndex';
 const dashboard = getDashboardStore();
 
 let dealLens = $state<string | null>(null);
+let topicLens = $state<string | null>(null);
+let onlyChannelsWithMessages = $state(true);
+
+function setDealLens(v: string | null) {
+	dealLens = v;
+	if (v !== null) topicLens = null;
+}
+
+function setTopicLens(v: string | null) {
+	topicLens = v;
+	if (v !== null) dealLens = null;
+}
 
 function tagsMatchDeal(tags: string[] | null | undefined, dealId: string): boolean {
 	if (!tags) return false;
@@ -11,23 +23,39 @@ function tagsMatchDeal(tags: string[] | null | undefined, dealId: string): boole
 	return tags.some((t) => t.toLowerCase() === id);
 }
 
-const lensActive = $derived(dealLens !== null);
-const lensDeal = $derived(lensActive ? dashboard.dealById(dealLens) : null);
-const lensName = $derived(lensDeal?.name ?? dealLens);
+// Deal-only activation — drives the filters below that have no topic-lens
+// equivalent (meeting preps, intel tags): MeetingPrep/IntelItem carry
+// `deal_tag`/`tags` but no `initiative`, so a Topic-lens selection leaves
+// them unfiltered rather than emptying them out.
+const dealLensActive = $derived(dealLens !== null);
+const topicLensActive = $derived(topicLens !== null);
+const lensActive = $derived(dealLensActive || topicLensActive);
+
+const lensDeal = $derived(dealLensActive ? dashboard.dealById(dealLens) : null);
+const lensTopic = $derived(topicLensActive ? dashboard.initiativeById(topicLens) : null);
+const lensName = $derived(lensDeal?.name ?? lensTopic?.label ?? dealLens ?? topicLens);
 
 const filteredActions = $derived.by(() => {
 	const all = dashboard.briefing?.action_items ?? [];
-	return lensActive ? all.filter((a) => a.deal_tag === dealLens) : all;
+	if (topicLensActive) return all.filter((a) => a.initiative === topicLens);
+	return dealLensActive ? all.filter((a) => a.deal_tag === dealLens) : all;
 });
 
 const filteredPreps = $derived.by(() => {
 	const all = dashboard.briefing?.meeting_preps ?? [];
-	return lensActive ? all.filter((p) => p.deal_tag === dealLens) : all;
+	return dealLensActive ? all.filter((p) => p.deal_tag === dealLens) : all;
 });
 
 const filteredEvents = $derived.by(() => {
 	const source = dashboard.briefing?.calendar?.events ?? [];
-	const filtered = lensActive ? source.filter((e) => e.deal_tag === dealLens) : source.slice();
+	let filtered: typeof source;
+	if (topicLensActive) {
+		filtered = source.filter((e) => e.initiative === topicLens);
+	} else if (dealLensActive) {
+		filtered = source.filter((e) => e.deal_tag === dealLens);
+	} else {
+		filtered = source.slice();
+	}
 	// `start` is "HH:MM" — lexicographic sort is chronological. Copy first
 	// so we never mutate the briefing payload from a derived.
 	filtered.sort((a, b) => a.start.localeCompare(b.start));
@@ -43,22 +71,34 @@ const filteredConflicts = $derived.by(() => {
 
 const filteredEmailActToday = $derived.by(() => {
 	const all = dashboard.briefing?.email?.act_today ?? [];
-	return lensActive ? all.filter((m) => m.deal_tag === dealLens) : all;
+	if (topicLensActive) return all.filter((m) => m.initiative === topicLens);
+	return dealLensActive ? all.filter((m) => m.deal_tag === dealLens) : all;
 });
 
 const filteredEmailFyi = $derived.by(() => {
 	const all = dashboard.briefing?.email?.fyi ?? [];
-	return lensActive ? all.filter((m) => m.deal_tag === dealLens) : all;
+	if (topicLensActive) return all.filter((m) => m.initiative === topicLens);
+	return dealLensActive ? all.filter((m) => m.deal_tag === dealLens) : all;
 });
 
 const filteredChannels = $derived.by(() => {
 	const all = dashboard.briefing?.slack?.channels ?? [];
-	return lensActive ? all.filter((ch) => ch.deal_tag === dealLens) : all;
+	let channels: typeof all;
+	if (dealLensActive) {
+		channels = all.filter((ch) => ch.deal_tag === dealLens);
+	} else if (topicLensActive) {
+		channels = all
+			.map((ch) => ({ ...ch, messages: ch.messages.filter((m) => m.initiative === topicLens) }))
+			.filter((ch) => ch.messages.length > 0);
+	} else {
+		channels = all;
+	}
+	return onlyChannelsWithMessages ? channels.filter((ch) => ch.messages.length > 0) : channels;
 });
 
 const filteredIntel = $derived.by(() => {
 	const all = dashboard.briefing?.intelligence ?? [];
-	if (!lensActive) return all;
+	if (!dealLensActive) return all;
 	return all
 		.map((cat) => ({
 			...cat,
@@ -95,10 +135,17 @@ const counts = $derived.by(() => {
 export function getDashboardViewStore() {
 	return {
 		get dealLens() { return dealLens; },
-		set dealLens(v: string | null) { dealLens = v; },
+		set dealLens(v: string | null) { setDealLens(v); },
+
+		get topicLens() { return topicLens; },
+		set topicLens(v: string | null) { setTopicLens(v); },
+
+		get onlyChannelsWithMessages() { return onlyChannelsWithMessages; },
+		set onlyChannelsWithMessages(v: boolean) { onlyChannelsWithMessages = v; },
 
 		get lensActive() { return lensActive; },
 		get lensDeal() { return lensDeal; },
+		get lensTopic() { return lensTopic; },
 		get lensName() { return lensName; },
 
 		get filteredActions() { return filteredActions; },

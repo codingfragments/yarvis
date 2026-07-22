@@ -342,7 +342,8 @@ Human-readable lookback description: `"yesterday EOD"`, `"Friday EOD"`, `"2 hour
         { "label": "Merger Agreement Issues List", "url": "https://docs.google.com/document/d/..." },
         { "label": "Security Onboarding Plan",     "url": "https://docs.google.com/document/d/..." }
       ],
-      "action": null
+      "action": null,
+      "initiative": null
     }
   ]
 }
@@ -361,6 +362,7 @@ Human-readable lookback description: `"yesterday EOD"`, `"Friday EOD"`, `"2 hour
 | `messages[].links[]` | array | Named links extracted from the message (Google Docs, spreadsheets, etc.). |
 | `messages[].action` | string \| null | If this specific message requires a follow-up action, describe it. Otherwise null. |
 | `messages[].url` | string \| null | Direct deep-link to the specific message (`https://dd.slack.com/archives/{channelId}/p{ts_no_dot}`). Optional. |
+| `messages[].initiative` | string \| null | Initiative `id` from `briefing_config.yaml initiatives[]` — same matching rules as email/calendar items. Lives on the message, not the channel, since mixed-content channels (e.g. `#corpdev-backroom`) carry multiple initiatives across their traffic. |
 
 Channels with `activity_level: "quiet"` should still appear in the digest with a single `"No new messages since [since]."` entry so the user has confirmation coverage.
 

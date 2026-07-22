@@ -12,16 +12,10 @@
 </script>
 
 {#if deals.length > 0}
-	<div class="flex items-center gap-1.5 flex-wrap py-2 border-b border-base-content/5">
+	<div class="flex items-center gap-1.5 flex-wrap">
 		<span class="text-xs uppercase tracking-wider text-base-content/40 font-semibold mr-1">
 			Lens:
 		</span>
-		<Chip
-			labelOverride="All"
-			variant="interactive"
-			active={selected === null}
-			onclick={() => onSelect(null)}
-		/>
 		{#each deals as d (d.id)}
 			{@const active = selected === d.id}
 			<Chip
