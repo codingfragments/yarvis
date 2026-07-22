@@ -198,6 +198,8 @@ pub struct SlackMessage {
     pub links: Vec<NamedLink>,
     #[serde(default)]
     pub action: Option<String>,
+    #[serde(default)]
+    pub initiative: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -262,6 +264,8 @@ pub struct ActionItem {
     pub created_at: Option<String>,
     #[serde(default)]
     pub completed_at: Option<String>,
+    #[serde(default)]
+    pub initiative: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -282,6 +286,46 @@ pub struct BriefingConfig {
     pub intelligence_categories: Vec<IntelligenceCategoryDef>,
     #[serde(default)]
     pub active_deals: Vec<ActiveDealDef>,
+    /// Computed at parse time from the raw `initiatives[]` YAML — see
+    /// `RawInitiativeDef` / `read_config`. Only initiatives with
+    /// `deal_tag: null` and `show_in_lens: true` make it into this list;
+    /// deal-linked initiatives are already reachable via `active_deals`.
+    #[serde(default)]
+    pub initiatives: Vec<InitiativeDef>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct InitiativeDef {
+    pub id: String,
+    pub label: String,
+}
+
+/// Raw shape of a single `initiatives[]` entry in `briefing_config.yaml`,
+/// used only to compute `BriefingConfig.initiatives` — `keywords` is parsed
+/// upstream by the briefing skill and never needed by the client.
+#[derive(Debug, Clone, Deserialize)]
+struct RawInitiativeDef {
+    id: String,
+    label: String,
+    #[serde(default)]
+    deal_tag: Option<String>,
+    #[serde(default)]
+    show_in_lens: bool,
+}
+
+/// Mirrors `BriefingConfig` for the raw YAML shape, where `initiatives[]`
+/// still carries `deal_tag`/`show_in_lens` and needs filtering before it
+/// becomes the public `InitiativeDef` list.
+#[derive(Debug, Clone, Deserialize)]
+struct RawBriefingConfig {
+    #[serde(default)]
+    user: Option<UserProfile>,
+    #[serde(default)]
+    intelligence_categories: Vec<IntelligenceCategoryDef>,
+    #[serde(default)]
+    active_deals: Vec<ActiveDealDef>,
+    #[serde(default)]
+    initiatives: Vec<RawInitiativeDef>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -453,8 +497,20 @@ pub fn read_config(daily_src_dir: String) -> Result<BriefingConfig, String> {
     let path = resolve_dir(&daily_src_dir).join("briefing_config.yaml");
     let raw = fs::read_to_string(&path)
         .map_err(|e| format!("Failed to read briefing_config.yaml at {}: {}", path.display(), e))?;
-    serde_yaml::from_str::<BriefingConfig>(&raw)
-        .map_err(|e| format!("briefing_config.yaml parse error: {}", e))
+    let parsed = serde_yaml::from_str::<RawBriefingConfig>(&raw)
+        .map_err(|e| format!("briefing_config.yaml parse error: {}", e))?;
+    let initiatives = parsed
+        .initiatives
+        .into_iter()
+        .filter(|i| i.deal_tag.is_none() && i.show_in_lens)
+        .map(|i| InitiativeDef { id: i.id, label: i.label })
+        .collect();
+    Ok(BriefingConfig {
+        user: parsed.user,
+        intelligence_categories: parsed.intelligence_categories,
+        active_deals: parsed.active_deals,
+        initiatives,
+    })
 }
 
 #[tauri::command]

@@ -12,15 +12,38 @@
 		lensActive: boolean;
 		lensName: string | null;
 		dealById: (id: string | null | undefined) => ActiveDealDef | null;
+		onlyChannelsWithMessages: boolean;
+		onToggleOnlyChannelsWithMessages: (v: boolean) => void;
 	}
 
-	let { slack, channels, lensActive, lensName, dealById }: Props = $props();
+	let {
+		slack,
+		channels,
+		lensActive,
+		lensName,
+		dealById,
+		onlyChannelsWithMessages,
+		onToggleOnlyChannelsWithMessages
+	}: Props = $props();
 </script>
 
 <div class="flex flex-col gap-3">
-	{#if slack.since && !lensActive}
-		<p class="text-xs text-base-content/50">Since {slack.since}</p>
-	{/if}
+	<div class="flex items-center justify-between gap-2">
+		{#if slack.since && !lensActive}
+			<p class="text-xs text-base-content/50">Since {slack.since}</p>
+		{:else}
+			<span></span>
+		{/if}
+		<label class="flex items-center gap-1.5 text-xs text-base-content/50 cursor-pointer">
+			Only channels with messages
+			<input
+				type="checkbox"
+				class="toggle toggle-xs"
+				checked={onlyChannelsWithMessages}
+				onchange={(e) => onToggleOnlyChannelsWithMessages(e.currentTarget.checked)}
+			/>
+		</label>
+	</div>
 	{#if channels.length === 0}
 		<EmptyState items="slack channels" {lensActive} {lensName} fallback="No slack activity." />
 	{/if}

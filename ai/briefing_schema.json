@@ -342,7 +342,8 @@
         "summary": { "type": "string" },
         "links": { "type": "array", "items": { "$ref": "#/$defs/named_link" } },
         "action": { "type": ["string", "null"] },
-        "url": { "type": ["string", "null"] }
+        "url": { "type": ["string", "null"] },
+        "initiative": { "type": ["string", "null"] }
       }
     },
     "named_link": {

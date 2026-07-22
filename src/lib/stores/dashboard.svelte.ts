@@ -6,7 +6,8 @@ import type {
 	BriefingConfig,
 	DailyBriefing,
 	DashboardQuestion,
-	IntelligenceCategoryDef
+	IntelligenceCategoryDef,
+	InitiativeDef
 } from '$lib/types';
 
 let briefing = $state<DailyBriefing | null>(null);
@@ -32,6 +33,11 @@ export function getDashboardStore() {
 		dealById(id: string | null | undefined): ActiveDealDef | null {
 			if (!id || !config) return null;
 			return config.active_deals.find((d) => d.id === id) ?? null;
+		},
+
+		initiativeById(id: string | null | undefined): InitiativeDef | null {
+			if (!id || !config) return null;
+			return config.initiatives.find((i) => i.id === id) ?? null;
 		},
 
 		categoryById(id: string): IntelligenceCategoryDef | null {

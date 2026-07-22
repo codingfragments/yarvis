@@ -470,6 +470,8 @@ If no keyword matches → `initiative: null`.
 
 **Note:** `deal_tag` and `initiative` coexist and serve different filter axes. An email about the Aspen merger agreement will have both `deal_tag: "aspen"` and `initiative: "aspen_merger_agreement"`. This lets the display component filter by deal (all Aspen items) or by initiative (just merger agreement items, across email + Slack + calendar).
 
+**Slack messages and action items are not a special case here.** `initiative` on `slack_message` and `action_item` has always been part of the JSON contract this step writes to — historically it just went unread downstream (the dashboard client had nowhere to filter on it). It now does: Slack messages carry `initiative` for per-message Topic-lens filtering (a whole channel can be mixed-content), and action items inherit `initiative` from whichever calendar/email/Slack item they were derived from when re-derivation runs. Don't skip tagging either just because it was previously inert.
+
 ---
 
 ### Step C — Assign `urgency` to calendar events
